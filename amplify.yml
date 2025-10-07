@@ -1,0 +1,49 @@
+version: 1
+applications:
+  - appRoot: .
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npx -v
+            - corepack enable
+            - corepack prepare pnpm@9.0.0 --activate
+            - pnpm install --frozen-lockfile
+        build:
+          commands:
+            # Next.js App Router SSR/ISR build
+            - pnpm build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+          - .next/cache/**/*
+    customHeaders:
+      # good defaults for security
+      - pattern: '**/*'
+        headers:
+          - key: Strict-Transport-Security
+            value: max-age=31536000; includeSubDomains; preload
+          - key: X-Content-Type-Options
+            value: nosniff
+          - key: X-Frame-Options
+            value: DENY
+          - key: Referrer-Policy
+            value: no-referrer-when-downgrade
+    environment:
+      # Amplify will inject these per Environment (dev/stage/prod).
+      # Set them in Amplify console > App settings > Environment variables.
+      variables:
+        NODE_OPTIONS: '--max_old_space_size=4096'
+        NEXT_TELEMETRY_DISABLED: '1'
+        # Your app expects these; set real values in Amplify console after CDK deploy:
+        DATABASE_URL: ''
+        CURAGENESIS_API_BASE: 'https://api.curagenesis.com'
+        CURAGENESIS_API_KEY: ''
+        CURAGENESIS_API_TIMEOUT_MS: '10000'
+        NEXT_PUBLIC_CG_METRICS_BASE: 'https://api.curagenesis.com'
+        CG_METRICS_API_KEY: ''
+        SKIP_AUTH: 'false'
