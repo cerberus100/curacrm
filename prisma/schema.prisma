@@ -12,14 +12,16 @@ datasource db {
 
 // Sales Rep / User
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  role      Role
-  active    Boolean  @default(true)
-  accounts  Account[] @relation("UserAccounts")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  role         Role
+  active       Boolean   @default(true)
+  onboardedAt  DateTime? @map("onboarded_at")
+  firstLoginAt DateTime? @map("first_login_at")
+  accounts     Account[] @relation("UserAccounts")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([email])
   @@index([active])
