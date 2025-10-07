@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* CuraGenesis Brand Colors */
+    --background: 203 43% 10%;        /* #0c1d25 */
+    --foreground: 210 10% 98%;        /* #fbfbfb */
+
+    --card: 201 45% 19%;              /* #142c36 */
+    --card-foreground: 210 10% 98%;
+
+    --popover: 201 45% 19%;
+    --popover-foreground: 210 10% 98%;
+
+    --primary: 195 84% 17%;           /* #083d4f */
+    --primary-foreground: 210 10% 98%;
+
+    --secondary: 196 43% 22%;         /* #204550 */
+    --secondary-foreground: 210 10% 98%;
+
+    --muted: 196 17% 63%;             /* #8ea5ac */
+    --muted-foreground: 196 17% 20%;
+
+    --accent: 197 77% 12%;            /* #042937 */
+    --accent-foreground: 210 10% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 10% 98%;
+
+    --border: 196 43% 22%;            /* #204550 */
+    --input: 196 43% 22%;
+    --ring: 195 84% 17%;
+
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .brand-gradient {
+    background: linear-gradient(135deg, #083d4f 0%, #042937 60%, #030e15 100%);
+  }
+}

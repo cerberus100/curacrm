@@ -1,0 +1,145 @@
+// CuraGenesis Intake + KPI CRM Schema
+// Strict validation at API layer (Zod)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Sales Rep / User
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  role      Role
+  active    Boolean  @default(true)
+  accounts  Account[] @relation("UserAccounts")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([active])
+  @@map("users")
+}
+
+enum Role {
+  admin
+  rep
+}
+
+// Practice Account
+model Account {
+  id              String        @id @default(uuid())
+  practiceName    String        @map("practice_name")
+  npiOrg          String?       @map("npi_org") @db.Char(10)
+  phoneDisplay    String?       @map("phone_display")
+  phoneE164       String?       @unique @map("phone_e164")
+  email           String?
+  website         String?
+  specialty       String
+  ehrSystem       String?       @map("ehr_system")
+  addressLine1    String?       @map("address_line1")
+  addressLine2    String?       @map("address_line2")
+  city            String?
+  state           String
+  zip             String?
+  leadSource      String?       @map("lead_source")
+  status          AccountStatus @default(draft)
+  ownerRepId      String        @map("owner_rep_id")
+  
+  // Relations
+  ownerRep      User         @relation(fields: [ownerRepId], references: [id], name: "UserAccounts")
+  contacts      Contact[]
+  submissions   Submission[]
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([ownerRepId])
+  @@index([status])
+  @@index([npiOrg])
+  @@index([phoneE164])
+  @@map("accounts")
+}
+
+enum AccountStatus {
+  draft
+  ready_to_send
+  sent
+  failed
+  acknowledged
+}
+
+// Contact (at least 1 required per account)
+model Contact {
+  id                      String      @id @default(uuid())
+  accountId               String      @map("account_id")
+  contactType             ContactType @map("contact_type")
+  fullName                String      @map("full_name")
+  npiIndividual           String?     @map("npi_individual") @db.Char(10)
+  title                   String?
+  email                   String?
+  phoneDisplay            String?     @map("phone_display")
+  phoneE164               String?     @map("phone_e164")
+  preferredContactMethod  String?     @map("preferred_contact_method")
+  
+  // Relations
+  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([email])
+  @@map("contacts")
+}
+
+enum ContactType {
+  clinician
+  owner_physician
+  admin
+  billing
+}
+
+// Submission tracking (idempotent sends to CuraGenesis)
+model Submission {
+  id              String           @id @default(uuid())
+  accountId       String           @map("account_id")
+  submittedById   String           @map("submitted_by_id")
+  idempotencyKey  String           @unique @map("idempotency_key")
+  status          SubmissionStatus @default(pending)
+  requestPayload  Json             @map("request_payload")
+  responsePayload Json?            @map("response_payload")
+  errorMessage    String?          @map("error_message")
+  httpCode        Int?             @map("http_code")
+  
+  // Relations
+  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([submittedById])
+  @@index([status])
+  @@index([idempotencyKey])
+  @@map("submissions")
+}
+
+enum SubmissionStatus {
+  pending
+  sent
+  failed
+}
+
+// Settings (key-value store)
+model Setting {
+  key   String @id
+  value Json
+
+  @@map("settings")
+}
