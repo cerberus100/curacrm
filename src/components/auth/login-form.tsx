@@ -19,14 +19,27 @@ export function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simple demo login - accepts any email/password
-    setTimeout(() => {
+    try {
+      // Demo mode - accept any credentials and redirect to dashboard
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       toast({
-        title: "Welcome to CuraGenesis",
+        title: "✅ Welcome to CuraGenesis",
         description: "Login successful!",
       });
-      router.push("/dashboard");
-    }, 1000);
+      
+      // Use setTimeout to ensure toast shows before navigation
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 100);
+    } catch (error) {
+      toast({
+        title: "Login Failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -43,14 +56,25 @@ export function LoginForm() {
 
       {/* Logo and Branding - Centered */}
       <div className="relative z-10 flex flex-col items-center mb-12">
-        {/* DNA Helix Logo - 30% bigger */}
-        <div className="mb-6" style={{ filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6))' }}>
+        {/* DNA Helix Logo */}
+        <div className="mb-4" style={{ filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6))' }}>
           <img 
             src="/curagenesis-logo.jpg" 
             alt="CuraGenesis DNA Logo" 
             className="h-[170px] w-[170px] object-contain"
           />
         </div>
+        
+        {/* CURAGENESIS Wordmark */}
+        <h1 
+          className="text-4xl font-bold tracking-wide mb-2"
+          style={{ 
+            color: '#FFFFFF',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
+          }}
+        >
+          CURA<span style={{ color: '#0E9FB7' }}>GENESIS</span>
+        </h1>
         
         {/* Tagline */}
         <p 
