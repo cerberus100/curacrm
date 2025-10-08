@@ -5,14 +5,11 @@ applications:
       phases:
         preBuild:
           commands:
-            - npx -v
-            - corepack enable
-            - corepack prepare pnpm@9.0.0 --activate
-            - pnpm install --frozen-lockfile
+            - npm ci
         build:
           commands:
             # Next.js App Router SSR/ISR build
-            - pnpm build
+            - npm run build
       artifacts:
         baseDirectory: .next
         files:
