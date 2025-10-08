@@ -151,7 +151,7 @@ export default function OnboardingPage() {
           </div>
           <CardTitle className="text-2xl">Welcome to CuraGenesis!</CardTitle>
           <CardDescription>
-            Let's get you set up
+            Let&apos;s get you set up
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
