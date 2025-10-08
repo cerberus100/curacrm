@@ -7,6 +7,11 @@ import type { NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Skip all auth checks if SKIP_AUTH is enabled (demo mode)
+  if (process.env.SKIP_AUTH === 'true') {
+    return NextResponse.next();
+  }
+
   // Skip middleware for public routes
   const publicRoutes = ["/login", "/onboard", "/unauthorized", "/api/auth"];
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
