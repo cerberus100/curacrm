@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
+// Force dynamic rendering for routes using cookies()
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/users
  * Admin-only: List all users

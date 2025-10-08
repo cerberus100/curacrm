@@ -1,19 +1,16 @@
 import { z } from "zod";
 
-// During build, env vars may not be set - use defaults to allow build to complete
-const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
-
 const envSchema = z.object({
-  // Database
-  DATABASE_URL: z.string().url().optional(),
+  // Database - always provide a default for build
+  DATABASE_URL: z.string().url(),
 
-  // CuraGenesis API - Intake
+  // CuraGenesis API - Intake - always provide defaults
   CURAGENESIS_API_BASE: z.string().url(),
-  CURAGENESIS_API_KEY: z.string().min(1).optional(),
+  CURAGENESIS_API_KEY: z.string().min(1),
   CURAGENESIS_API_TIMEOUT_MS: z.string().transform(Number).pipe(z.number().positive()),
 
-  // CuraGenesis API - Metrics
-  CG_METRICS_API_KEY: z.string().min(1).optional(),
+  // CuraGenesis API - Metrics - always provide default
+  CG_METRICS_API_KEY: z.string().min(1),
 
   // App
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -25,13 +22,13 @@ const clientEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 });
 
-// Validate server env with build-time defaults
+// Validate server env - provide defaults for build time
 export const env = envSchema.parse({
-  DATABASE_URL: process.env.DATABASE_URL || (isBuildTime ? 'postgresql://build:build@localhost:5432/build' : undefined),
+  DATABASE_URL: process.env.DATABASE_URL || 'postgresql://build:build@localhost:5432/build',
   CURAGENESIS_API_BASE: process.env.CURAGENESIS_API_BASE || 'https://api.curagenesis.com',
-  CURAGENESIS_API_KEY: process.env.CURAGENESIS_API_KEY || (isBuildTime ? 'build-key' : undefined),
+  CURAGENESIS_API_KEY: process.env.CURAGENESIS_API_KEY || 'build-key',
   CURAGENESIS_API_TIMEOUT_MS: process.env.CURAGENESIS_API_TIMEOUT_MS || '10000',
-  CG_METRICS_API_KEY: process.env.CG_METRICS_API_KEY || (isBuildTime ? 'build-key' : undefined),
+  CG_METRICS_API_KEY: process.env.CG_METRICS_API_KEY || 'build-key',
   NODE_ENV: process.env.NODE_ENV,
 });
 
