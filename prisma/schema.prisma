@@ -12,16 +12,26 @@ datasource db {
 
 // Sales Rep / User
 model User {
-  id           String    @id @default(uuid())
-  name         String
-  email        String    @unique
-  role         Role
-  active       Boolean   @default(true)
-  onboardedAt  DateTime? @map("onboarded_at")
-  firstLoginAt DateTime? @map("first_login_at")
-  accounts     Account[] @relation("UserAccounts")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                    String    @id @default(uuid())
+  name                  String
+  email                 String    @unique
+  role                  Role
+  active                Boolean   @default(true)
+  onboardedAt           DateTime? @map("onboarded_at")
+  firstLoginAt          DateTime? @map("first_login_at")
+  tempPassword          String?   @map("temp_password")
+  passwordResetRequired Boolean   @default(false) @map("password_reset_required")
+  
+  // Onboarding compliance
+  baaCompleted          Boolean   @default(false) @map("baa_completed")
+  baaCompletedAt        DateTime? @map("baa_completed_at")
+  w9Completed           Boolean   @default(false) @map("w9_completed")
+  w9CompletedAt         DateTime? @map("w9_completed_at")
+  
+  accounts              Account[] @relation("UserAccounts")
+  documents             Document[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@index([email])
   @@index([active])
@@ -144,4 +154,64 @@ model Setting {
   value Json
 
   @@map("settings")
+}
+
+// Document storage (BAA, W9, etc)
+model Document {
+  id          String       @id @default(uuid())
+  userId      String       @map("user_id")
+  type        DocumentType
+  fileName    String       @map("file_name")
+  fileUrl     String?      @map("file_url")
+  fileSize    Int?         @map("file_size")
+  mimeType    String?      @map("mime_type")
+  status      DocumentStatus @default(pending)
+  signedAt    DateTime?    @map("signed_at")
+  
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@map("documents")
+}
+
+enum DocumentType {
+  baa
+  w9
+  contract
+  other
+}
+
+enum DocumentStatus {
+  pending
+  uploaded
+  signed
+  approved
+  rejected
+}
+
+// Invite tokens for new reps
+model InviteToken {
+  id          String    @id @default(uuid())
+  email       String
+  name        String
+  token       String    @unique
+  tempPassword String   @map("temp_password")
+  used        Boolean   @default(false)
+  usedAt      DateTime? @map("used_at")
+  expiresAt   DateTime  @map("expires_at")
+  createdById String    @map("created_by_id")
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([token])
+  @@index([email])
+  @@index([used])
+  @@map("invite_tokens")
 }
