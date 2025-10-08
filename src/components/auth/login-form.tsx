@@ -17,22 +17,25 @@ export function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("🔐 Login form submitted");
     setIsLoading(true);
 
     try {
       // Demo mode - accept any credentials and redirect to dashboard
+      console.log("⏳ Waiting 600ms...");
       await new Promise(resolve => setTimeout(resolve, 600));
       
+      console.log("✅ Showing success toast");
       toast({
         title: "✅ Welcome to CuraGenesis",
         description: "Login successful!",
       });
       
-      // Use window.location for full page navigation (bypasses middleware issues)
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 200);
+      console.log("🚀 Navigating to /dashboard");
+      // Direct navigation - no delay
+      window.location.href = "/dashboard";
     } catch (error) {
+      console.error("❌ Login error:", error);
       toast({
         title: "Login Failed",
         description: error instanceof Error ? error.message : "Please try again",
