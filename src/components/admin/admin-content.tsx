@@ -22,16 +22,18 @@ interface User {
 }
 
 export function AdminContent() {
-  const { toast } = useToast();
+  const { toast} = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const [showBulkForm, setShowBulkForm] = useState(false);
   const [inviteData, setInviteData] = useState({
     firstName: "",
     lastName: "",
     email: "",
   });
   const [inviting, setInviting] = useState(false);
+  const [bulkInvites, setBulkInvites] = useState("");
 
   useEffect(() => {
     fetchUsers();
@@ -60,7 +62,7 @@ export function AdminContent() {
     setInviting(true);
 
     try {
-      const response = await fetch("/api/users/invite", {
+      const response = await fetch("/api/admin/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(inviteData),
@@ -73,9 +75,14 @@ export function AdminContent() {
 
       const data = await response.json();
 
+      // Show invite details
+      console.log("📧 INVITE CREATED:");
+      console.log("Invite Link:", data.invite.inviteLink);
+      console.log("Temp Password:", data.invite.tempPassword);
+
       toast({
-        title: "✅ User Invited",
-        description: `${inviteData.firstName} ${inviteData.lastName} has been invited. Check console for invite link.`,
+        title: "✅ Invite Sent Successfully",
+        description: `${inviteData.firstName} ${inviteData.lastName} has been invited. Check console for details.`,
       });
 
       // Reset form
@@ -88,6 +95,68 @@ export function AdminContent() {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to invite user",
+        variant: "destructive",
+      });
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleBulkInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviting(true);
+
+    try {
+      // Parse CSV format: firstName,lastName,email
+      const lines = bulkInvites.trim().split("\n");
+      const invites = lines
+        .filter(line => line.trim())
+        .map(line => {
+          const [firstName, lastName, email] = line.split(",").map(s => s.trim());
+          return { firstName, lastName, email };
+        });
+
+      if (invites.length === 0) {
+        throw new Error("No valid invites found. Format: firstName,lastName,email");
+      }
+
+      const response = await fetch("/api/admin/invite-bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invites }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to send bulk invites");
+      }
+
+      const data = await response.json();
+
+      console.log("📧 BULK INVITES CREATED:");
+      console.log(`Successful: ${data.results.successful.length}`);
+      console.log(`Failed: ${data.results.failed.length}`);
+      data.results.successful.forEach((invite: any) => {
+        console.log(`\n${invite.name} (${invite.email})`);
+        console.log(`  Link: ${invite.inviteLink}`);
+        console.log(`  Password: ${invite.tempPassword}`);
+      });
+
+      toast({
+        title: "✅ Bulk Invites Sent",
+        description: `${data.results.successful.length} invites sent successfully. ${data.results.failed.length} failed. Check console for details.`,
+      });
+
+      // Reset form
+      setBulkInvites("");
+      setShowBulkForm(false);
+
+      // Refresh users list
+      fetchUsers();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send bulk invites",
         variant: "destructive",
       });
     } finally {
@@ -112,13 +181,30 @@ export function AdminContent() {
               <CardTitle>User Management</CardTitle>
               <CardDescription>Manage sales reps and administrators</CardDescription>
             </div>
-            <Button
-              onClick={() => setShowInviteForm(!showInviteForm)}
-              className="gap-2"
-            >
-              <UserPlus className="h-4 w-4" />
-              Invite Rep
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  setShowInviteForm(!showInviteForm);
+                  setShowBulkForm(false);
+                }}
+                className="gap-2"
+                variant={showInviteForm ? "default" : "outline"}
+              >
+                <UserPlus className="h-4 w-4" />
+                Invite Single
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowBulkForm(!showBulkForm);
+                  setShowInviteForm(false);
+                }}
+                className="gap-2"
+                variant={showBulkForm ? "default" : "outline"}
+              >
+                <Users className="h-4 w-4" />
+                Bulk Upload
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -163,6 +249,38 @@ export function AdminContent() {
                   type="button"
                   variant="outline"
                   onClick={() => setShowInviteForm(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {showBulkForm && (
+            <form onSubmit={handleBulkInvite} className="mb-6 p-4 border border-border rounded-lg bg-card/50">
+              <h3 className="font-semibold mb-4">Bulk Upload Invites</h3>
+              <p className="text-sm text-[color:var(--muted)] mb-3">
+                Enter one invite per line in CSV format: <code className="text-xs bg-primary/10 px-1 py-0.5 rounded">firstName,lastName,email</code>
+              </p>
+              <div className="mb-3">
+                <Label htmlFor="bulkInvites">CSV Data</Label>
+                <textarea
+                  id="bulkInvites"
+                  value={bulkInvites}
+                  onChange={(e) => setBulkInvites(e.target.value)}
+                  placeholder="John,Doe,john@example.com&#10;Jane,Smith,jane@example.com&#10;Mike,Johnson,mike@example.com"
+                  className="w-full min-h-[150px] p-3 rounded-md border border-input bg-background text-sm font-mono"
+                  required
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={inviting}>
+                  {inviting ? "Processing..." : "Send Bulk Invites"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowBulkForm(false)}
                 >
                   Cancel
                 </Button>

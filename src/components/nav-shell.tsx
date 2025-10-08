@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Send, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Building2, Send, Settings, LogOut, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ const baseNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "rep"] },
   { name: "Intake", href: "/intake", icon: Building2, roles: ["admin", "rep"] },
   { name: "Submissions", href: "/submissions", icon: Send, roles: ["admin", "rep"] },
+  { name: "Documents", href: "/documents", icon: FileText, roles: ["admin", "rep"] },
   { name: "Admin", href: "/admin", icon: Settings, roles: ["admin"] },
 ];
 
