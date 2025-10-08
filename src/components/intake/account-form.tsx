@@ -435,16 +435,6 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
             </div>
 
             <div>
-              <Label htmlFor="ehrSystem">EHR System</Label>
-              <Input
-                id="ehrSystem"
-                value={account.ehrSystem || ""}
-                onChange={(e) => setAccount({ ...account, ehrSystem: e.target.value })}
-                placeholder="Epic, Cerner, etc."
-              />
-            </div>
-
-            <div>
               <Label htmlFor="leadSource">Lead Source</Label>
               <Input
                 id="leadSource"

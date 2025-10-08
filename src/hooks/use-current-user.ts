@@ -25,6 +25,21 @@ export function useCurrentUser() {
   useEffect(() => {
     async function fetchUser() {
       try {
+        // Demo mode: Check localStorage first
+        const demoUser = localStorage.getItem("demo_user");
+        if (demoUser) {
+          console.log("👤 Using demo user from localStorage");
+          const parsedUser = JSON.parse(demoUser);
+          setUser({
+            ...parsedUser,
+            onboardedAt: new Date(),
+            firstLoginAt: new Date(),
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Try API (for production auth)
         const response = await fetch("/api/auth/me");
 
         if (!response.ok) {

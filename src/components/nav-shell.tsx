@@ -26,6 +26,8 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   });
 
   const handleLogout = async () => {
+    // Clear demo user from localStorage
+    localStorage.removeItem("demo_user");
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
   };
@@ -35,11 +37,6 @@ export function NavShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <div className="w-64 border-r border-border bg-card">
         <div className="flex h-16 items-center gap-3 border-b border-border px-4">
-          <img 
-            src="/curagenesis-logo.jpg" 
-            alt="CuraGenesis Logo" 
-            className="h-10 w-10 object-contain"
-          />
           <h1 className="text-xl font-bold text-foreground">
             CuraGenesis
           </h1>
@@ -96,16 +93,9 @@ export function NavShell({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="flex-1">
         <div className="h-16 border-b border-border brand-gradient flex items-center px-8">
-          <div className="flex items-center gap-3">
-            <img 
-              src="/curagenesis-logo.jpg" 
-              alt="CuraGenesis" 
-              className="h-8 w-8 object-contain"
-            />
-            <span className="text-lg font-semibold text-white">
-              Intake CRM
-            </span>
-          </div>
+          <span className="text-lg font-semibold text-white">
+            Intake CRM
+          </span>
         </div>
         <main className="p-8">{children}</main>
       </div>

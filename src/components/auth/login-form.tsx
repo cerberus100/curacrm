@@ -21,18 +21,33 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      // Demo mode - accept any credentials and redirect to dashboard
-      console.log("⏳ Waiting 600ms...");
+      // Demo mode - set role based on email
+      console.log("📧 Email:", email);
+      
+      // Determine role based on email
+      const role = email.toLowerCase().includes("admin") ? "admin" : "rep";
+      console.log("👤 Assigned role:", role);
+      
+      // Store demo user in localStorage for role-based UI
+      const demoUser = {
+        id: "demo-" + Date.now(),
+        name: role === "admin" ? "Admin User" : "Sales Agent",
+        email: email,
+        role: role,
+        active: true,
+      };
+      localStorage.setItem("demo_user", JSON.stringify(demoUser));
+      console.log("💾 Stored demo user:", demoUser);
+      
       await new Promise(resolve => setTimeout(resolve, 600));
       
       console.log("✅ Showing success toast");
       toast({
         title: "✅ Welcome to CuraGenesis",
-        description: "Login successful!",
+        description: `Logged in as ${role === "admin" ? "Admin" : "Sales Agent"}`,
       });
       
       console.log("🚀 Navigating to /dashboard");
-      // Direct navigation - no delay
       window.location.href = "/dashboard";
     } catch (error) {
       console.error("❌ Login error:", error);
