@@ -48,6 +48,7 @@ model Account {
   id              String        @id @default(uuid())
   practiceName    String        @map("practice_name")
   npiOrg          String?       @map("npi_org") @db.Char(10)
+  einTin          String?       @map("ein_tin") @db.Char(9)
   phoneDisplay    String?       @map("phone_display")
   phoneE164       String?       @unique @map("phone_e164")
   email           String?

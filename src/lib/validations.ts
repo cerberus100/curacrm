@@ -5,6 +5,7 @@ import { z } from "zod";
 // ============================================================================
 
 const NPI_REGEX = /^[0-9]{10}$/;
+const EIN_TIN_REGEX = /^\d{9}$/; // 9 digits, stored without dashes
 const PHONE_DISPLAY_REGEX = /^\(\d{3}\) \d{3}-\d{4}$/;
 const E164_REGEX = /^\+1\d{10}$/;
 const STATE_REGEX = /^[A-Z]{2}$/;
@@ -73,6 +74,12 @@ export const AccountSchema = z.object({
   npiOrg: z
     .string()
     .regex(NPI_REGEX, "NPI must be exactly 10 digits")
+    .optional()
+    .nullable(),
+  
+  einTin: z
+    .string()
+    .regex(EIN_TIN_REGEX, "EIN/TIN must be exactly 9 digits")
     .optional()
     .nullable(),
   
@@ -218,6 +225,7 @@ export const IntakePayloadSchema = z.object({
   practice: z.object({
     name: z.string(),
     npi_org: z.string().nullable(),
+    ein_tin: z.string().nullable(),
     specialty: z.string(),
     ehr_system: z.string().nullable(),
     phone: z.string().nullable(),
@@ -315,6 +323,28 @@ export function formatPhoneE164(phone: string): string | null {
   }
   if (digits.length === 11 && digits[0] === "1") {
     return `+${digits}`;
+  }
+  return null;
+}
+
+/**
+ * Format EIN/TIN for display: XX-XXXXXXX
+ */
+export function formatEinTinDisplay(einTin: string): string {
+  const digits = einTin.replace(/\D/g, "");
+  if (digits.length === 9) {
+    return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+  }
+  return einTin;
+}
+
+/**
+ * Strip EIN/TIN to just digits for storage
+ */
+export function formatEinTinStorage(einTin: string): string | null {
+  const digits = einTin.replace(/\D/g, "");
+  if (digits.length === 9) {
+    return digits;
   }
   return null;
 }

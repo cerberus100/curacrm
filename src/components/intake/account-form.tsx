@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Save, Send, Plus, Trash2, AlertCircle, AlertTriangle } from "lucide-react";
-import { formatPhoneDisplay, formatPhoneE164 } from "@/lib/validations";
+import { formatPhoneDisplay, formatPhoneE164, formatEinTinDisplay, formatEinTinStorage } from "@/lib/validations";
 import { ContactsManager } from "./contacts-manager";
 import { ConfirmSendDialog } from "./confirm-send-dialog";
 import { US_STATES, SPECIALTIES } from "@/lib/constants";
@@ -20,6 +20,7 @@ interface Account {
   specialty: string;
   state: string;
   npiOrg?: string | null;
+  einTin?: string | null;
   phoneDisplay?: string | null;
   phoneE164?: string | null;
   email?: string | null;
@@ -92,6 +93,14 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
     }));
   };
 
+  const handleEinTinChange = (value: string) => {
+    const storage = formatEinTinStorage(value);
+    setAccount(prev => ({
+      ...prev,
+      einTin: storage,
+    }));
+  };
+
   const checkDuplicates = async (npi?: string, phone?: string) => {
     if (!npi && !phone) {
       setDuplicateWarning(null);
@@ -151,6 +160,9 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
     }
     if (account.npiOrg && !/^[0-9]{10}$/.test(account.npiOrg)) {
       newErrors.npiOrg = "NPI must be exactly 10 digits";
+    }
+    if (account.einTin && !/^\d{9}$/.test(account.einTin)) {
+      newErrors.einTin = "EIN/TIN must be exactly 9 digits";
     }
 
     setErrors(newErrors);
@@ -399,6 +411,23 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
               {errors.npiOrg && (
                 <p className="text-sm text-destructive mt-1">{errors.npiOrg}</p>
               )}
+            </div>
+
+            <div>
+              <Label htmlFor="einTin">EIN/TIN (9 digits)</Label>
+              <Input
+                id="einTin"
+                value={account.einTin ? formatEinTinDisplay(account.einTin) : ""}
+                onChange={(e) => handleEinTinChange(e.target.value)}
+                placeholder="12-3456789"
+                maxLength={11}
+              />
+              {errors.einTin && (
+                <p className="text-sm text-destructive mt-1">{errors.einTin}</p>
+              )}
+              <p className="text-xs text-[color:var(--muted)] mt-1">
+                Federal Tax ID (XX-XXXXXXX)
+              </p>
             </div>
 
             <div>

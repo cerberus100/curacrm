@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       practice: {
         name: account.practiceName,
         npi_org: account.npiOrg,
+        ein_tin: account.einTin,
         specialty: account.specialty,
         ehr_system: account.ehrSystem,
         phone: account.phoneE164 || account.phoneDisplay,
