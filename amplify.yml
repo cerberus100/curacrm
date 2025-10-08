@@ -43,4 +43,4 @@ applications:
         CURAGENESIS_API_TIMEOUT_MS: '10000'
         NEXT_PUBLIC_CG_METRICS_BASE: 'https://api.curagenesis.com'
         CG_METRICS_API_KEY: ''
-        SKIP_AUTH: 'false'
+        SKIP_AUTH: 'true'
