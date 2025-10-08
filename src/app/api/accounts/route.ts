@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
         specialty: validatedData.specialty,
         state: validatedData.state,
         npiOrg: validatedData.npiOrg,
+        einTin: validatedData.einTin,
         phoneDisplay: validatedData.phoneDisplay,
         phoneE164: validatedData.phoneE164,
         email: validatedData.email,
