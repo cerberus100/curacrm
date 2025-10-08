@@ -11,6 +11,11 @@ export interface CurrentUser {
   active: boolean;
   onboardedAt: Date | null;
   firstLoginAt: Date | null;
+  baaCompleted: boolean;
+  baaCompletedAt: Date | null;
+  w9Completed: boolean;
+  w9CompletedAt: Date | null;
+  passwordResetRequired: boolean;
 }
 
 /**
@@ -34,6 +39,11 @@ export function useCurrentUser() {
             ...parsedUser,
             onboardedAt: new Date(),
             firstLoginAt: new Date(),
+            baaCompleted: true,
+            baaCompletedAt: new Date(),
+            w9Completed: true,
+            w9CompletedAt: new Date(),
+            passwordResetRequired: false,
           });
           setLoading(false);
           return;
@@ -71,5 +81,8 @@ export function useCurrentUser() {
     isRep: user?.role === "rep",
     hasCompletedOnboarding: user?.onboardedAt !== null,
     needsOnboarding: user?.role === "rep" && user?.onboardedAt === null,
+    baaCompleted: user?.baaCompleted || false,
+    w9Completed: user?.w9Completed || false,
+    needsPasswordReset: user?.passwordResetRequired || false,
   };
 }
