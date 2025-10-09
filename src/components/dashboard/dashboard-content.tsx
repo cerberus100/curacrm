@@ -11,11 +11,12 @@ import { useKPIData } from "@/hooks/use-kpi-data";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, AreaChart, Area } from "recharts";
 import { ConversionKPIsSection, SalesPerformanceSection, RetentionSection, OperationalSection, KPICard } from "./kpi-section";
 import { SegmentBreakdown } from "./segment-breakdown";
+import { PracticeSyncStatus } from "./practice-sync-status";
 import type { DateRange } from "@/lib/kpi-types";
 
 export function DashboardContent() {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
-  const [activeTab, setActiveTab] = useState<"overview" | "segments" | "team">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "segments" | "team" | "practices">("overview");
   const { overview, geo, segments, leaderboard, isLoading, error } = useKPIData(dateRange);
 
   return (
@@ -50,6 +51,13 @@ export function DashboardContent() {
               onClick={() => setActiveTab("team")}
             >
               Team
+            </Button>
+            <Button
+              variant={activeTab === "practices" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("practices")}
+            >
+              Practices
             </Button>
           </div>
           <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRange)}>
@@ -309,6 +317,11 @@ export function DashboardContent() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Practices Tab */}
+      {activeTab === "practices" && (
+        <PracticeSyncStatus />
       )}
     </div>
   );

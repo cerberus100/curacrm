@@ -64,6 +64,8 @@ model Account {
   status          AccountStatus @default(draft)
   ownerRepId      String        @map("owner_rep_id")
   curaGenesisUserId String?   @map("curagenesis_user_id")
+  totalOrders     Int           @default(0) @map("total_orders")
+  lastSyncedAt    DateTime?     @map("last_synced_at")
   
   // Relations
   ownerRep      User         @relation(fields: [ownerRepId], references: [id], name: "UserAccounts")
