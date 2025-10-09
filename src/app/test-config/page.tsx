@@ -16,7 +16,7 @@ export default function TestConfigPage() {
       const data = await response.json();
       setConfigResult(data);
     } catch (error) {
-      setConfigResult({ error: error.message });
+      setConfigResult({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
     setLoading(false);
   };
@@ -28,7 +28,7 @@ export default function TestConfigPage() {
       const data = await response.json();
       setSyncResult(data);
     } catch (error) {
-      setSyncResult({ error: error.message });
+      setSyncResult({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
     setLoading(false);
   };
