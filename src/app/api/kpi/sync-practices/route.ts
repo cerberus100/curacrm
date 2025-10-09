@@ -12,6 +12,14 @@ export const runtime = 'nodejs';
  */
 export async function GET(request: NextRequest) {
   try {
+    // Check if vendor token is available
+    if (!process.env.CURAGENESIS_VENDOR_TOKEN) {
+      return NextResponse.json({
+        error: "CuraGenesis vendor token not configured",
+        details: "Please set CURAGENESIS_VENDOR_TOKEN in your environment variables"
+      }, { status: 500 });
+    }
+
     const client = new CuraGenesisUserAPI();
     
     // Fetch all practices from CuraGenesis

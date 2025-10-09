@@ -93,9 +93,17 @@ export class CuraGenesisUserAPI {
   private vendorToken: string;
 
   constructor() {
-    this.vendorToken = env.CURAGENESIS_VENDOR_TOKEN;
+    // Try to get vendor token from environment
+    try {
+      this.vendorToken = env.CURAGENESIS_VENDOR_TOKEN;
+    } catch (e) {
+      // If env validation fails, try direct access
+      this.vendorToken = process.env.CURAGENESIS_VENDOR_TOKEN || '';
+    }
+    
     if (!this.vendorToken) {
-      throw new Error('CURAGENESIS_VENDOR_TOKEN is not configured');
+      console.error('CURAGENESIS_VENDOR_TOKEN is not configured');
+      throw new Error('CURAGENESIS_VENDOR_TOKEN is not configured. Please check your environment variables.');
     }
   }
 
@@ -148,6 +156,8 @@ export class CuraGenesisUserAPI {
         url.searchParams.set('cursor', cursor);
       }
 
+      console.log('Fetching practices from:', url.toString());
+      
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
@@ -156,11 +166,20 @@ export class CuraGenesisUserAPI {
         }
       });
 
-      const result = await response.json();
+      let result;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error(`Unexpected response format: ${text.substring(0, 100)}`);
+      }
 
       if (!response.ok) {
+        console.error('API Error Response:', result);
         if (response.status === 401) {
-          throw new Error('Unauthorized: Invalid vendor token');
+          throw new Error('Unauthorized: Invalid vendor token. Please check your CURAGENESIS_VENDOR_TOKEN.');
         }
         throw new Error(result.message || `API error: ${response.status}`);
       }
