@@ -58,11 +58,11 @@ export async function POST(request: NextRequest) {
       paSigned: false,
       facilityName: account.practiceName,
       facilityAddress: {
-        street: account.addressLine1,
-        city: account.city,
+        street: account.addressLine1 || undefined,
+        city: account.city || undefined,
         state: account.state,
-        zip: account.zip,
-        phone: account.phoneE164 || account.phoneDisplay,
+        zip: account.zip || undefined,
+        phone: account.phoneE164 || account.phoneDisplay || undefined,
       },
       facilityNPI: account.npiOrg || undefined,
       facilityTIN: account.einTin || undefined,
@@ -81,10 +81,10 @@ export async function POST(request: NextRequest) {
         npi: primaryContact.npiIndividual,
         phone: primaryContact.phoneE164 || primaryContact.phoneDisplay || undefined,
         specialty: account.specialty || undefined,
-        street: account.addressLine1,
-        city: account.city,
+        street: account.addressLine1 || undefined,
+        city: account.city || undefined,
         state: account.state,
-        zip: account.zip,
+        zip: account.zip || undefined,
       };
     }
 

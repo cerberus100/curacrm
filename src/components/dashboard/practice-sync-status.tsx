@@ -66,6 +66,7 @@ export function PracticeSyncStatus() {
   useEffect(() => {
     // Load initial data
     syncPractices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!syncData) {
