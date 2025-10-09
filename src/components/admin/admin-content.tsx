@@ -308,8 +308,8 @@ export function AdminContent() {
                       <td className="py-3 px-4">{user.name}</td>
                       <td className="py-3 px-4 text-[color:var(--muted)]">{user.email}</td>
                       <td className="py-3 px-4">
-                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                          {user.role.toUpperCase()}
+                        <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>
+                          {user.role}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">

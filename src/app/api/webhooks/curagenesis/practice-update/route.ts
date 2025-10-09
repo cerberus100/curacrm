@@ -174,7 +174,7 @@ async function handlePracticeActivated(data: any) {
     await prisma.account.update({
       where: { id: account.id },
       data: {
-        status: "acknowledged",
+        status: "ACTIVE",
         lastSyncedAt: new Date()
       }
     });

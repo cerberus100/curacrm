@@ -51,9 +51,9 @@ export function SubmissionsContent() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "sent":
+      case "SUCCESS":
         return <CheckCircle2 className="h-5 w-5 text-green-400" />;
-      case "failed":
+      case "FAILED":
         return <XCircle className="h-5 w-5 text-red-400" />;
       default:
         return <AlertCircle className="h-5 w-5 text-yellow-400" />;
@@ -62,9 +62,9 @@ export function SubmissionsContent() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "sent":
+      case "SUCCESS":
         return "bg-green-500/10 text-green-400 border-green-500/20";
-      case "failed":
+      case "FAILED":
         return "bg-red-500/10 text-red-400 border-red-500/20";
       default:
         return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";

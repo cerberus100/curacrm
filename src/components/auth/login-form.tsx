@@ -25,15 +25,15 @@ export function LoginForm() {
       console.log("📧 Email:", email);
       
       // Determine role based on email
-      const role = email.toLowerCase().includes("admin") ? "admin" : "rep";
+      const role = email.toLowerCase().includes("admin") ? "ADMIN" : "AGENT";
       console.log("👤 Assigned role:", role);
       
       // Store demo user in localStorage for role-based UI
       const demoUser = {
         id: "demo-" + Date.now(),
-        name: role === "admin" ? "Admin User" : "Sales Agent",
+        name: role === "ADMIN" ? "Admin User" : "Sales Agent",
         email: email,
-        role: role,
+        role: role as "ADMIN" | "AGENT",
         active: true,
       };
       localStorage.setItem("demo_user", JSON.stringify(demoUser));
@@ -44,7 +44,7 @@ export function LoginForm() {
       console.log("✅ Showing success toast");
       toast({
         title: "✅ Welcome to CuraGenesis",
-        description: `Logged in as ${role === "admin" ? "Admin" : "Sales Agent"}`,
+        description: `Logged in as ${role === "ADMIN" ? "Admin" : "Sales Agent"}`,
       });
       
       console.log("🚀 Navigating to /dashboard");

@@ -43,9 +43,9 @@ export function SubmissionDrawer({ submission, onClose }: SubmissionDrawerProps)
             <CardContent className="space-y-3">
               <div className="flex items-center gap-2">
                 <Badge className={
-                  submission.status === "sent" 
+                  submission.status === "SUCCESS" 
                     ? "bg-green-500/10 text-green-400 border-green-500/20"
-                    : submission.status === "failed"
+                    : submission.status === "FAILED"
                     ? "bg-red-500/10 text-red-400 border-red-500/20"
                     : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
                 }>

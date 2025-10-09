@@ -114,5 +114,5 @@ export function hasCompletedOnboarding(user: CurrentUser): boolean {
  * Reps need onboarding, admins don't
  */
 export function needsOnboarding(user: CurrentUser): boolean {
-  return user.role === "rep" && !hasCompletedOnboarding(user);
+  return user.role === "AGENT" && !hasCompletedOnboarding(user);
 }

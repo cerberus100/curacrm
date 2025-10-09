@@ -61,11 +61,11 @@ export async function POST(request: Request) {
         const inviteRecord = await db.inviteToken.create({
           data: {
             email,
-            name: `${firstName} ${lastName}`,
             token,
             tempPassword,
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
             createdById: "admin-demo", // In production, use actual admin ID
+            role: "AGENT",
           },
         });
 

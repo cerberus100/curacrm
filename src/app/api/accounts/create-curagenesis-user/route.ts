@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       facilityAddress: {
         street: account.addressLine1 || undefined,
         city: account.city || undefined,
-        state: account.state,
+        state: account.state || undefined,
         zip: account.zip || undefined,
         phone: account.phoneE164 || account.phoneDisplay || undefined,
       },
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       primaryContactName: primaryContact.fullName || undefined,
       primaryContactEmail: primaryContact.email || undefined,
       primaryContactPhone: primaryContact.phoneE164 || primaryContact.phoneDisplay || undefined,
-      salesRepresentative: account.ownerRep.name,
+      salesRepresentative: account.ownerRep?.name || "",
     };
 
     // Add physician info if the primary contact is a provider
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         specialty: account.specialty || undefined,
         street: account.addressLine1 || undefined,
         city: account.city || undefined,
-        state: account.state,
+        state: account.state || undefined,
         zip: account.zip || undefined,
       };
     }
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
         where: { id: accountId },
         data: {
           curaGenesisUserId: response.userId,
-          status: "sent",
+          status: "SUBMITTED",
         },
       });
 
@@ -124,9 +124,9 @@ export async function POST(request: NextRequest) {
       await prisma.submission.create({
         data: {
           accountId,
-          submittedById: account.ownerRepId,
+          submittedById: account.ownerRepId || "",
           idempotencyKey: `user-creation-${Date.now()}`,
-          status: "sent",
+          status: "SUCCESS",
           httpCode: 200,
           requestPayload: payload as any,
           responsePayload: response as any,

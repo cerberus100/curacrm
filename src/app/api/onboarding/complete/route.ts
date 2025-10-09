@@ -54,9 +54,9 @@ export async function POST(request: Request) {
       // Create new user
       user = await db.user.create({
         data: {
-          name: invite.name,
+          name: invite.tempPassword?.startsWith("Demo") ? "Demo User" : "Agent User",
           email: invite.email,
-          role: "rep",
+          role: "AGENT",
           active: true,
           tempPassword: invite.tempPassword,
           passwordResetRequired: true,
@@ -74,9 +74,12 @@ export async function POST(request: Request) {
         await db.document.create({
           data: {
             userId: user.id,
-            type: "baa",
+            type: "BAA",
             fileName: "BAA_Agreement.pdf",
-            status: "signed",
+            fileUrl: "/documents/baa-template.pdf",
+            fileSize: 1024000,
+            mimeType: "application/pdf",
+            status: "SIGNED",
             signedAt: new Date(),
           },
         });
@@ -86,9 +89,12 @@ export async function POST(request: Request) {
         await db.document.create({
           data: {
             userId: user.id,
-            type: "w9",
+            type: "W9",
             fileName: "W9_Form.pdf",
-            status: "signed",
+            fileUrl: "/documents/w9-template.pdf",
+            fileSize: 512000,
+            mimeType: "application/pdf",
+            status: "SIGNED",
             signedAt: new Date(),
           },
         });
@@ -105,9 +111,12 @@ export async function POST(request: Request) {
         await db.document.create({
           data: {
             userId: user.id,
-            type: "baa",
+            type: "BAA",
             fileName: "BAA_Agreement.pdf",
-            status: "signed",
+            fileUrl: "/documents/baa-template.pdf",
+            fileSize: 1024000,
+            mimeType: "application/pdf",
+            status: "SIGNED",
             signedAt: new Date(),
           },
         });
@@ -121,9 +130,12 @@ export async function POST(request: Request) {
         await db.document.create({
           data: {
             userId: user.id,
-            type: "w9",
+            type: "W9",
             fileName: "W9_Form.pdf",
-            status: "signed",
+            fileUrl: "/documents/w9-template.pdf",
+            fileSize: 512000,
+            mimeType: "application/pdf",
+            status: "SIGNED",
             signedAt: new Date(),
           },
         });

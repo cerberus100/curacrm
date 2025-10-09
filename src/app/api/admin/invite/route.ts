@@ -42,11 +42,11 @@ export async function POST(request: Request) {
     const invite = await db.inviteToken.create({
       data: {
         email,
-        name: `${firstName} ${lastName}`,
         token,
         tempPassword,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         createdById: "admin-demo", // In production, use actual admin ID
+        role: "AGENT",
       },
     });
 
@@ -70,7 +70,6 @@ export async function POST(request: Request) {
       invite: {
         id: invite.id,
         email: invite.email,
-        name: invite.name,
         inviteLink,
         tempPassword, // Only for demo - in production, send via email only
         expiresAt: invite.expiresAt,

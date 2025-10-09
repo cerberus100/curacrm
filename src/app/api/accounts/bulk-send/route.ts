@@ -96,9 +96,9 @@ export async function POST(request: NextRequest) {
             const submission = await prisma.submission.create({
               data: {
                 accountId,
-                submittedById: account.ownerRepId,
+                submittedById: account.ownerRepId || "",
                 idempotencyKey,
-                status: "pending",
+                status: "PENDING",
                 requestPayload: payload as any,
               },
             });
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
             await prisma.submission.update({
               where: { id: submission.id },
               data: {
-                status: response.success ? "sent" : "failed",
+                status: response.success ? "SUCCESS" : "FAILED",
                 httpCode: response.status,
                 responsePayload: response.data as any,
                 errorMessage: response.error,
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
             await prisma.account.update({
               where: { id: accountId },
               data: {
-                status: response.success ? "sent" : "failed",
+                status: response.success ? "SUBMITTED" : "PENDING",
               },
             });
 

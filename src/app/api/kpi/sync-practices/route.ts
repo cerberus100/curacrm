@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       // Match with local data and track by sales rep
       const localAccount = accountMap.get(practice.userId);
       if (localAccount) {
-        const repName = localAccount.ownerRep.name;
+        const repName = localAccount.ownerRep?.name || "Unassigned";
         const repData = kpiData.practicesBySalesRep.get(repName) || { count: 0, orders: 0 };
         repData.count++;
         repData.orders += practice.totalOrders;

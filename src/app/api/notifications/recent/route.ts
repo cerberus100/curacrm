@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
         const value = setting.value as any;
         
         // Filter by user's accounts or admin role
-        if (user.role === "admin" || 
+        if (user.role === "ADMIN" || 
             (value.repId && value.repId === userId) ||
             (value.accountId && user.accounts.some(acc => acc.id === value.accountId))) {
           return {
