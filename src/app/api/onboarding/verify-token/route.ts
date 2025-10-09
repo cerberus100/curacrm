@@ -48,7 +48,6 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       invite: {
-        name: invite.name,
         email: invite.email,
         tempPassword: invite.tempPassword,
         expiresAt: invite.expiresAt,

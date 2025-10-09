@@ -8,11 +8,11 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { useRouter } from "next/navigation";
 
 const baseNavigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "rep"] },
-  { name: "Intake", href: "/intake", icon: Building2, roles: ["admin", "rep"] },
-  { name: "Submissions", href: "/submissions", icon: Send, roles: ["admin", "rep"] },
-  { name: "Documents", href: "/documents", icon: FileText, roles: ["admin", "rep"] },
-  { name: "Admin", href: "/admin", icon: Settings, roles: ["admin"] },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "AGENT"] },
+  { name: "Intake", href: "/intake", icon: Building2, roles: ["ADMIN", "AGENT"] },
+  { name: "Submissions", href: "/submissions", icon: Send, roles: ["ADMIN", "AGENT"] },
+  { name: "Documents", href: "/documents", icon: FileText, roles: ["ADMIN", "AGENT"] },
+  { name: "Admin", href: "/admin", icon: Settings, roles: ["ADMIN"] },
 ];
 
 export function NavShell({ children }: { children: React.ReactNode }) {

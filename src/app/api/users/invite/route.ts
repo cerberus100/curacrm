@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: `${firstName} ${lastName}`,
         email,
-        role: "rep", // ALWAYS rep, regardless of client payload
+        role: "AGENT", // ALWAYS AGENT, regardless of client payload
         active: true,
         onboardedAt: null, // Not onboarded yet
         firstLoginAt: null,
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log(`Name: ${firstName} ${lastName}`);
       console.log(`Email: ${email}`);
-      console.log(`Role: rep`);
+      console.log(`Role: AGENT`);
       console.log(`Invite Link: ${inviteLink}`);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     }

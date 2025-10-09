@@ -30,7 +30,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
         id: "dev-admin-id",
         name: "Dev Admin",
         email: "admin@dev.local",
-        role: "admin",
+        role: "ADMIN",
         active: true,
         onboardedAt: new Date(),
         firstLoginAt: new Date(),
@@ -87,7 +87,7 @@ export async function requireAuth(): Promise<CurrentUser> {
 export async function requireAdmin(): Promise<CurrentUser> {
   const user = await requireAuth();
 
-  if (user.role !== "admin") {
+  if (user.role !== "ADMIN") {
     throw new Error("Forbidden: Admin access required");
   }
 

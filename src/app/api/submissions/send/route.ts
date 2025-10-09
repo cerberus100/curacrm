@@ -74,11 +74,11 @@ export async function POST(request: NextRequest) {
         phone: contact.phoneE164 || contact.phoneDisplay,
         preferred_contact_method: contact.preferredContactMethod,
       })),
-      rep: {
+      rep: account.ownerRep ? {
         id: account.ownerRep.id,
         name: account.ownerRep.name,
         email: account.ownerRep.email,
-      },
+      } : undefined,
     });
 
     // Generate idempotency key (or reuse from recent failed attempt within 24h)
@@ -101,9 +101,9 @@ export async function POST(request: NextRequest) {
     const submission = await prisma.submission.create({
       data: {
         accountId,
-        submittedById: account.ownerRepId,
+        submittedById: account.ownerRepId || "",
         idempotencyKey,
-        status: "pending",
+        status: "PENDING",
         requestPayload: payload as any,
       },
     });
@@ -128,14 +128,14 @@ export async function POST(request: NextRequest) {
       await prisma.account.update({
         where: { id: accountId },
         data: {
-          status: "sent",
+          status: "SUBMITTED",
         },
       });
     } else {
       await prisma.account.update({
         where: { id: accountId },
         data: {
-          status: "FAILED",
+          status: "PENDING",
         },
       });
     }
