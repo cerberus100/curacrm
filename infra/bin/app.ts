@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import 'source-map-support/register';
 import { App } from 'aws-cdk-lib';
 import { VpcStack } from '../lib/vpc-stack.js';
 import { DatabaseStack } from '../lib/database-stack.js';

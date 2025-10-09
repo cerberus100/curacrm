@@ -27,10 +27,10 @@ export function containsPHI(text: string): boolean {
 // ENUMS
 // ============================================================================
 
-export const RoleEnum = z.enum(["admin", "rep"]);
-export const AccountStatusEnum = z.enum(["draft", "ready_to_send", "sent", "failed", "acknowledged"]);
-export const ContactTypeEnum = z.enum(["clinician", "owner_physician", "admin", "billing"]);
-export const SubmissionStatusEnum = z.enum(["pending", "sent", "failed"]);
+export const RoleEnum = z.enum(["ADMIN", "AGENT"]);
+export const AccountStatusEnum = z.enum(["PENDING", "ACTIVE", "INACTIVE", "SUBMITTED"]);
+export const ContactTypeEnum = z.enum(["clinical", "provider", "admin", "billing"]);
+export const SubmissionStatusEnum = z.enum(["PENDING", "SUCCESS", "FAILED"]);
 
 // ============================================================================
 // USER SCHEMA

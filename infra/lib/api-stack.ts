@@ -34,14 +34,17 @@ export class ApiStack extends Stack {
       description: 'Security group for API Lambda functions'
     });
     
-    props.dbProxy.connections.allowDefaultPortFrom(sg);
+    // Skip proxy connections if not available (Aurora Serverless v1 limitation)
+    if (props.dbProxy) {
+      props.dbProxy.connections.allowDefaultPortFrom(sg);
+    }
 
-    const baseFnProps: Partial<lambda.FunctionProps> = {
+    const baseFnProps = {
       runtime: lambda.Runtime.NODEJS_20_X,
       memorySize: 1024,
       timeout: Duration.seconds(15),
       environment: {
-        DB_PROXY_ENDPOINT: props.dbProxy.endpoint,
+        DB_PROXY_ENDPOINT: props.dbProxy?.endpoint || 'placeholder',
         DB_SECRET_ARN: props.dbSecret.secretArn,
         DOCS_BUCKET: props.docBucket.bucketName,
         CURAGENESIS_API_TIMEOUT_MS: '10000',

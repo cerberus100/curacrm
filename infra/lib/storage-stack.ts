@@ -1,4 +1,4 @@
-import { Stack, StackProps, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
+import { Stack, StackProps, CfnOutput, RemovalPolicy, Duration } from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
@@ -19,10 +19,10 @@ export class StorageStack extends Stack {
           noncurrentVersionTransitions: [
             {
               storageClass: s3.StorageClass.GLACIER,
-              transitionAfter: 90
+              transitionAfter: Duration.days(90)
             }
           ],
-          noncurrentVersionExpiration: 365
+          noncurrentVersionExpiration: Duration.days(365)
         }
       ],
       removalPolicy: RemovalPolicy.RETAIN // Don't delete bucket on stack deletion

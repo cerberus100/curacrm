@@ -13,7 +13,7 @@ async function main() {
       id: "00000000-0000-0000-0000-000000000001",
       name: "Admin User",
       email: "admin@curagenesis.com",
-      role: "admin",
+      role: "ADMIN",
       active: true,
     },
   });
@@ -28,7 +28,7 @@ async function main() {
       id: "00000000-0000-0000-0000-000000000002",
       name: "Sales Rep",
       email: "rep@curagenesis.com",
-      role: "rep",
+      role: "AGENT",
       active: true,
     },
   });
@@ -39,7 +39,6 @@ async function main() {
   const account = await prisma.account.create({
     data: {
       practiceName: "Sample Medical Center",
-      specialty: "Family Medicine",
       state: "CA",
       city: "San Francisco",
       addressLine1: "123 Market Street",
@@ -47,7 +46,7 @@ async function main() {
       phoneDisplay: "(555) 123-4567",
       phoneE164: "+15551234567",
       email: "contact@samplemedical.com",
-      status: "draft",
+      status: "PENDING",
       ownerRepId: rep.id,
     },
   });

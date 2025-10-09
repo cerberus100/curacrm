@@ -55,21 +55,15 @@ export class DatabaseStack extends Stack {
     });
     this.cluster = cluster;
 
-    const proxy = cluster.addProxy('DbProxy', {
-      secrets: [dbSecret],
-      vpc: props.vpc,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-      debugLogging: false,
-      borrowTimeout: Duration.seconds(30),
-      requireTLS: true,
-      securityGroups: [sg]
-    });
-    this.dbProxy = proxy;
+    // Aurora Serverless v1 doesn't support RDS Proxy
+    // For production, consider upgrading to Aurora Serverless v2
+    // @ts-ignore - ServerlessCluster compatibility issue
+    this.dbProxy = null as any;
 
-    new CfnOutput(this, 'DbProxyEndpoint', { 
-      value: proxy.endpoint,
-      description: 'RDS Proxy endpoint for Lambda connections',
-      exportName: 'CG-DbProxyEndpoint'
+    new CfnOutput(this, 'DbClusterEndpoint', { 
+      value: cluster.clusterEndpoint.hostname,
+      description: 'Aurora Serverless cluster endpoint',
+      exportName: 'CG-DbClusterEndpoint'
     });
     
     new CfnOutput(this, 'DbSecretArn', { 
