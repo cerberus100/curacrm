@@ -9,6 +9,9 @@ const envSchema = z.object({
   CURAGENESIS_API_KEY: z.string().min(1),
   CURAGENESIS_API_TIMEOUT_MS: z.string().transform(Number).pipe(z.number().positive()),
 
+  // CuraGenesis API - Vendor Token for User Creation
+  CURAGENESIS_VENDOR_TOKEN: z.string().min(1),
+
   // CuraGenesis API - Metrics - always provide default
   CG_METRICS_API_KEY: z.string().min(1),
 
@@ -28,6 +31,7 @@ export const env = envSchema.parse({
   CURAGENESIS_API_BASE: process.env.CURAGENESIS_API_BASE || 'https://api.curagenesis.com',
   CURAGENESIS_API_KEY: process.env.CURAGENESIS_API_KEY || 'build-key',
   CURAGENESIS_API_TIMEOUT_MS: process.env.CURAGENESIS_API_TIMEOUT_MS || '10000',
+  CURAGENESIS_VENDOR_TOKEN: process.env.CURAGENESIS_VENDOR_TOKEN || 'build-key',
   CG_METRICS_API_KEY: process.env.CG_METRICS_API_KEY || 'build-key',
   NODE_ENV: process.env.NODE_ENV,
 });

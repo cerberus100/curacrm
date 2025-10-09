@@ -63,6 +63,7 @@ model Account {
   leadSource      String?       @map("lead_source")
   status          AccountStatus @default(draft)
   ownerRepId      String        @map("owner_rep_id")
+  curaGenesisUserId String?   @map("curagenesis_user_id")
   
   // Relations
   ownerRep      User         @relation(fields: [ownerRepId], references: [id], name: "UserAccounts")
@@ -99,6 +100,7 @@ model Contact {
   phoneDisplay            String?     @map("phone_display")
   phoneE164               String?     @map("phone_e164")
   preferredContactMethod  String?     @map("preferred_contact_method")
+  isPrimary               Boolean     @default(false) @map("is_primary")
   
   // Relations
   account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
@@ -116,6 +118,7 @@ enum ContactType {
   owner_physician
   admin
   billing
+  provider
 }
 
 // Submission tracking (idempotent sends to CuraGenesis)
