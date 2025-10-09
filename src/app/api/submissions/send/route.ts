@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     const existingSubmission = await prisma.submission.findFirst({
       where: {
         accountId,
-        status: "failed",
+        status: "FAILED",
         createdAt: {
           gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24h window
         },
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     const updatedSubmission = await prisma.submission.update({
       where: { id: submission.id },
       data: {
-        status: response.success ? "sent" : "failed",
+        status: response.success ? "SUCCESS" : "FAILED",
         httpCode: response.status,
         responsePayload: response.data as any,
         errorMessage: response.error,
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       await prisma.account.update({
         where: { id: accountId },
         data: {
-          status: "failed",
+          status: "FAILED",
         },
       });
     }

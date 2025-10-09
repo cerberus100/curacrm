@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
         const account = await prisma.account.create({
           data: {
             practiceName: validated.practice_name,
-            specialty: validated.specialty,
             state: validated.state,
             npiOrg: validated.npi_org || null,
             phoneDisplay,
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
             addressLine2: validated.address_line2 || null,
             city: validated.city || null,
             zip: validated.zip || null,
-            status: "draft",
+            status: "PENDING",
             ownerRepId,
           },
         });

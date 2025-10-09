@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
         city: validatedData.city,
         zip: validatedData.zip,
         leadSource: validatedData.leadSource,
-        status: "draft",
+        status: "PENDING",
         ownerRepId: validatedData.ownerRepId,
       },
       include: {

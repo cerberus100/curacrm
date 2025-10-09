@@ -38,12 +38,14 @@ model User {
 model Account {
   id             String   @id @default(uuid())
   practiceName   String   @map("practice_name")
+  specialty      String?
   npiOrg         String?  @map("npi_org")
   einTin         String?  @map("ein_tin")
   phoneDisplay   String?  @map("phone_display")
   phoneE164      String?  @map("phone_e164")
   fax            String?
   email          String?
+  website        String?
   ehrSystem      String?  @map("ehr_system")
   addressLine1   String?  @map("address_line1")
   addressLine2   String?  @map("address_line2")

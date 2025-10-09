@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
               practice: {
                 name: account.practiceName,
                 npi_org: account.npiOrg,
-                specialty: account.specialty,
                 ehr_system: account.ehrSystem,
                 phone: account.phoneE164 || account.phoneDisplay,
                 email: account.email,
@@ -84,11 +83,11 @@ export async function POST(request: NextRequest) {
                 phone: contact.phoneE164 || contact.phoneDisplay,
                 preferred_contact_method: contact.preferredContactMethod,
               })),
-              rep: {
+              rep: account.ownerRep ? {
                 id: account.ownerRep.id,
                 name: account.ownerRep.name,
                 email: account.ownerRep.email,
-              },
+              } : undefined,
             });
 
             const idempotencyKey = randomUUID();

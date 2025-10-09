@@ -46,10 +46,9 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
   const [isSending, setIsSending] = useState(false);
   const [account, setAccount] = useState<Partial<Account>>({
     practiceName: "",
-    specialty: "",
     state: "",
     ownerRepId: CURRENT_USER_ID,
-    status: "draft",
+    status: "PENDING",
   });
   const [contacts, setContacts] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
