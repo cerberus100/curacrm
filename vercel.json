@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/kpi/sync-practices/cron",
+      "schedule": "0 2 * * *",
+      "name": "Daily Practice Sync",
+      "description": "Sync practice data from CuraGenesis daily at 2 AM UTC"
+    },
+    {
+      "path": "/api/kpi/sync-practices/cron",
+      "schedule": "0 */6 * * *",
+      "name": "6-Hour Practice Sync",
+      "description": "Sync practice data every 6 hours for near real-time updates"
+    }
+  ]
+}

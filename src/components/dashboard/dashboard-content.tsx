@@ -12,6 +12,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { ConversionKPIsSection, SalesPerformanceSection, RetentionSection, OperationalSection, KPICard } from "./kpi-section";
 import { SegmentBreakdown } from "./segment-breakdown";
 import { PracticeSyncStatus } from "./practice-sync-status";
+import { RealTimeNotifications } from "./real-time-notifications";
 import type { DateRange } from "@/lib/kpi-types";
 
 export function DashboardContent() {
@@ -92,6 +93,9 @@ export function DashboardContent() {
       {/* Tab Content */}
       {overview && activeTab === "overview" && (
         <>
+          {/* Real-time notifications */}
+          <RealTimeNotifications />
+          
           {/* 1. Conversion Funnel */}
           <ConversionKPIsSection data={overview.conversion} />
 
