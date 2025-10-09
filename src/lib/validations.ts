@@ -143,7 +143,7 @@ export const AccountSchema = z.object({
     .optional()
     .nullable(),
   
-  status: AccountStatusEnum.default("draft"),
+  status: AccountStatusEnum.default("PENDING"),
   
   ownerRepId: z.string().uuid("Invalid owner rep ID"),
 });
