@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { CuraGenesisUserAPI } from "@/lib/curagenesis-api";
 
+// Prevent static generation of this route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 /**
  * GET /api/kpi/sync-practices
  * Fetch all practices from CuraGenesis and sync with local data

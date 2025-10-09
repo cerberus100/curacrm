@@ -3,6 +3,10 @@ import { prisma } from "@/lib/db";
 import { CuraGenesisUserAPI, CreateUserPayload } from "@/lib/curagenesis-api";
 import { z } from "zod";
 
+// Prevent static generation of this route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Validation schema for the request
 const CreateUserSchema = z.object({
   accountId: z.string(),

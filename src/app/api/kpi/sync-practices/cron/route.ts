@@ -3,6 +3,10 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { CuraGenesisUserAPI } from "@/lib/curagenesis-api";
 
+// Prevent static generation of this route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 /**
  * GET /api/kpi/sync-practices/cron
  * Automated endpoint for scheduled practice syncing

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
 
+// Prevent static generation of this route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 /**
  * POST /api/webhooks/curagenesis/practice-update
  * Real-time webhook endpoint for CuraGenesis practice updates
