@@ -65,7 +65,7 @@ DATABASE_URL=postgresql://username:password@host:port/database_name?schema=publi
 
 After deployment, visit:
 ```
-https://curageneiscrm.com/test-config
+https://d2zvm2tunkv4bq.amplifyapp.com/test-config
 ```
 
 Click "Check Configuration" to verify all variables are set correctly.
