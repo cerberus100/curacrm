@@ -19,12 +19,14 @@ interface Rep {
 export function DocumentUploadAdmin() {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
-  const [type, setType] = useState("OTHER");
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState("policy");
   const [description, setDescription] = useState("");
   const [reps, setReps] = useState<Rep[]>([]);
   const [selectedReps, setSelectedReps] = useState<Set<string>>(new Set());
   const [uploading, setUploading] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
+  const [uploadedDocId, setUploadedDocId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReps();
@@ -69,19 +71,10 @@ export function DocumentUploadAdmin() {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!file) {
+    if (!file || !title) {
       toast({
-        title: "No file selected",
-        description: "Please select a file to upload",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (selectedReps.size === 0) {
-      toast({
-        title: "No recipients",
-        description: "Please select at least one rep to send to",
+        title: "Missing fields",
+        description: "Please provide a title and file",
         variant: "destructive",
       });
       return;
@@ -90,31 +83,57 @@ export function DocumentUploadAdmin() {
     setUploading(true);
 
     try {
+      // Step 1: Upload the document
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('title', title);
       formData.append('type', type);
-      formData.append('description', description);
-      formData.append('userIds', Array.from(selectedReps).join(','));
+      if (description) formData.append('description', description);
 
-      const response = await fetch("/api/documents/upload", {
+      const uploadResponse = await fetch("/api/admin/documents/upload", {
         method: "POST",
         credentials: "include",
         body: formData,
       });
 
-      const data = await response.json();
+      const uploadData = await uploadResponse.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "Upload failed");
+      if (!uploadResponse.ok) {
+        throw new Error(uploadData.error || "Upload failed");
       }
 
-      toast({
-        title: "✅ Document uploaded",
-        description: `Sent to ${data.documentsCreated} rep(s)`,
-      });
+      // Step 2: Send to selected reps (if any)
+      if (selectedReps.size > 0) {
+        const sendResponse = await fetch("/api/admin/documents/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            documentId: uploadData.document.id,
+            repIds: Array.from(selectedReps),
+          }),
+        });
+
+        const sendData = await sendResponse.json();
+
+        if (!sendResponse.ok) {
+          throw new Error(sendData.error || "Failed to send");
+        }
+
+        toast({
+          title: "✅ Document uploaded & sent",
+          description: `${title} uploaded and sent to ${sendData.recipientsCreated} rep(s)`,
+        });
+      } else {
+        toast({
+          title: "✅ Document uploaded",
+          description: `${title} has been uploaded to the library`,
+        });
+      }
 
       // Reset form
       setFile(null);
+      setTitle("");
       setDescription("");
       setSelectedReps(new Set());
       setSelectAll(false);
@@ -137,19 +156,29 @@ export function DocumentUploadAdmin() {
   return (
     <Card className="bg-card border-border rounded-2xl">
       <CardHeader>
-        <CardTitle>Upload & Distribute Documents</CardTitle>
+        <CardTitle>Upload & Share Documents</CardTitle>
         <CardDescription>
-          Upload documents and send to reps (BAA, W-9, contracts, etc.)
+          Upload documents to the library and optionally distribute to reps
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleUpload} className="space-y-4">
           <div>
-            <Label htmlFor="file">Document File</Label>
+            <Label htmlFor="title">Document Title *</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., 2025 Sales Commission Policy"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="file">Document File *</Label>
             <Input
               id="file"
               type="file"
-              accept=".pdf,.doc,.docx"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
               required
             />
@@ -167,9 +196,12 @@ export function DocumentUploadAdmin() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="BAA">Business Associate Agreement</SelectItem>
-                <SelectItem value="W9">W-9 Tax Form</SelectItem>
-                <SelectItem value="OTHER">Other</SelectItem>
+                <SelectItem value="w9">W-9 Tax Form</SelectItem>
+                <SelectItem value="baa">Business Associate Agreement</SelectItem>
+                <SelectItem value="policy">Company Policy</SelectItem>
+                <SelectItem value="training">Training Material</SelectItem>
+                <SelectItem value="contract">Contract</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -180,13 +212,13 @@ export function DocumentUploadAdmin() {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g., Updated BAA for 2025"
+              placeholder="Brief description of this document"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <Label>Send To</Label>
+              <Label>Send To (Optional)</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -196,6 +228,9 @@ export function DocumentUploadAdmin() {
                 {selectAll ? "Deselect All" : "Select All"}
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Leave unselected to only upload to library without sending
+            </p>
             
             <div className="max-h-48 overflow-y-auto border border-border rounded-lg p-3 space-y-2">
               {reps.length === 0 ? (
@@ -228,15 +263,20 @@ export function DocumentUploadAdmin() {
 
           <Button
             type="submit"
-            disabled={uploading || !file || selectedReps.size === 0}
+            disabled={uploading || !file || !title}
             className="w-full"
           >
             {uploading ? (
               <>Uploading...</>
-            ) : (
+            ) : selectedReps.size > 0 ? (
               <>
                 <Send className="mr-2 h-4 w-4" />
                 Upload & Send to {selectedReps.size} Rep(s)
+              </>
+            ) : (
+              <>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload to Library
               </>
             )}
           </Button>

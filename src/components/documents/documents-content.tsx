@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { OnboardingDocuments } from "./OnboardingDocuments";
 import { RequiredDocumentsManager } from "./RequiredDocumentsManager";
+import { DocumentUploadAdmin } from "./DocumentUploadAdmin";
 
 interface Document {
   id: string;
@@ -107,6 +108,11 @@ export function DocumentsContent() {
           }
         </p>
       </div>
+
+      {/* Admin: Upload & Share Library Documents */}
+      {isAdmin && (
+        <DocumentUploadAdmin />
+      )}
 
       {/* Admin: Manage Required Document Types */}
       {isAdmin && (
