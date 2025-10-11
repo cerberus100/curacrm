@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { CuraGenesisUserAPI } from "@/lib/curagenesis-api";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 // Prevent static generation of this route
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,28 @@ export const runtime = 'nodejs';
  * Fetch all practices from CuraGenesis and sync with local data
  */
 export async function GET(request: NextRequest) {
+  return syncPractices();
+}
+
+/**
+ * POST /api/kpi/sync-practices
+ * Fetch all practices from CuraGenesis and sync with local data
+ */
+export async function POST(request: NextRequest) {
+  return syncPractices();
+}
+
+async function syncPractices() {
   try {
+    // Check if user is admin
+    try {
+      await requireAdmin();
+    } catch (error) {
+      return NextResponse.json({
+        error: "Unauthorized: Admin access required"
+      }, { status: 403 });
+    }
+    
     // Check if vendor token is available
     if (!process.env.CURAGENESIS_VENDOR_TOKEN) {
       return NextResponse.json({
@@ -79,31 +101,49 @@ export async function GET(request: NextRequest) {
         });
       }
       
-      // Match with local data and track by sales rep
+      // Save or update practice in database
       const localAccount = accountMap.get(practice.userId);
+      
       if (localAccount) {
+        // Update existing account
         const repName = localAccount.ownerRep?.name || "Unassigned";
         const repData = kpiData.practicesBySalesRep.get(repName) || { count: 0, orders: 0 };
         repData.count++;
         repData.orders += practice.totalOrders;
         kpiData.practicesBySalesRep.set(repName, repData);
         
-        // Update order count in local database
         await prisma.account.update({
           where: { id: localAccount.id },
           data: {
             totalOrders: practice.totalOrders,
+            specialty: practice.specialty || localAccount.specialty,
+            state: practice.state || localAccount.state,
+            status: practice.activatedAt ? "ACTIVE" : "PENDING",
             lastSyncedAt: new Date()
           }
         });
-      } else if (practice.salesRep) {
-        // Track by CuraGenesis sales rep name if no local match
-        const repData = kpiData.practicesBySalesRep.get(practice.salesRep) || { count: 0, orders: 0 };
+      } else {
+        // CREATE new account in database from CuraGenesis practice
+        const newAccount = await prisma.account.create({
+          data: {
+            practiceName: practice.practiceId, // Will be updated with real name later
+            curaGenesisUserId: practice.userId,
+            specialty: practice.specialty,
+            state: practice.state,
+            totalOrders: practice.totalOrders,
+            status: practice.activatedAt ? "ACTIVE" : "PENDING",
+            lastSyncedAt: new Date(),
+            createdAt: practice.activatedAt ? new Date(practice.activatedAt) : new Date()
+          }
+        });
+        
+        // Track by sales rep
+        const repData = kpiData.practicesBySalesRep.get(practice.salesRep || "Unassigned") || { count: 0, orders: 0 };
         repData.count++;
         repData.orders += practice.totalOrders;
-        kpiData.practicesBySalesRep.set(practice.salesRep, repData);
+        kpiData.practicesBySalesRep.set(practice.salesRep || "Unassigned", repData);
         
-        // Track unmatched practices
+        // Track as newly synced
         kpiData.unmatchedPractices.push({
           practiceId: practice.practiceId,
           salesRep: practice.salesRep,
@@ -155,11 +195,3 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * POST /api/kpi/sync-practices
- * Trigger a manual sync of practice data
- */
-export async function POST(request: NextRequest) {
-  // Same implementation as GET for manual triggers
-  return GET(request);
-}

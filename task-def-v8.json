@@ -1,0 +1,30 @@
+{
+  "family": "curagenesis-crm",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::337909762852:role/curagenesis-task-exec-role",
+  "taskRoleArn": "arn:aws:iam::337909762852:role/curagenesis-task-exec-role",
+  "containerDefinitions": [{
+    "name": "curagenesis-crm",
+    "image": "337909762852.dkr.ecr.us-east-1.amazonaws.com/curagenesis-crm:v2",
+    "portMappings": [{"containerPort": 3000, "protocol": "tcp"}],
+    "essential": true,
+    "environment": [
+      {"name": "NODE_ENV", "value": "production"},
+      {"name": "DATABASE_URL", "value": "postgresql://curagen_intake_user:CuraGenCRM2024!@cura-genesis-crm-db.c6ds4c4qok1n.us-east-1.rds.amazonaws.com:5432/curagenesis_intake_crm"},
+      {"name": "CURAGENESIS_VENDOR_TOKEN", "value": "Nb9sQCZnrAxAxS4KrysMLzRUQ2HN21hbZmpshgZYb1cT7sEPdJkNEE_MhfB59pDt"},
+      {"name": "NEXT_PUBLIC_API_URL", "value": "https://curagenesiscrm.com"},
+      {"name": "JWT_SECRET", "value": "cura-genesis-crm-jwt-secret-2024-secure-key"}
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "/ecs/curagenesis-crm",
+        "awslogs-region": "us-east-1",
+        "awslogs-stream-prefix": "ecs"
+      }
+    }
+  }]
+}

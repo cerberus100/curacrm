@@ -30,20 +30,19 @@ export function useCurrentUser() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        // Demo mode: Check localStorage first
-        const demoUser = localStorage.getItem("demo_user");
-        if (demoUser) {
-          console.log("👤 Using demo user from localStorage");
-          const parsedUser = JSON.parse(demoUser);
+        // Check localStorage for current user
+        const currentUser = localStorage.getItem("current_user");
+        if (currentUser) {
+          const parsedUser = JSON.parse(currentUser);
           setUser({
             ...parsedUser,
-            onboardedAt: new Date(),
-            firstLoginAt: new Date(),
-            baaCompleted: true,
-            baaCompletedAt: new Date(),
-            w9Completed: true,
-            w9CompletedAt: new Date(),
-            passwordResetRequired: false,
+            onboardedAt: parsedUser.onboardedAt ? new Date(parsedUser.onboardedAt) : null,
+            firstLoginAt: parsedUser.firstLoginAt ? new Date(parsedUser.firstLoginAt) : null,
+            baaCompleted: parsedUser.baaCompleted || false,
+            baaCompletedAt: parsedUser.baaCompletedAt ? new Date(parsedUser.baaCompletedAt) : null,
+            w9Completed: parsedUser.w9Completed || false,
+            w9CompletedAt: parsedUser.w9CompletedAt ? new Date(parsedUser.w9CompletedAt) : null,
+            passwordResetRequired: parsedUser.passwordResetRequired || false,
           });
           setLoading(false);
           return;

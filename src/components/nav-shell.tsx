@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Send, Settings, LogOut, FileText } from "lucide-react";
+import { LayoutDashboard, Building2, Send, Settings, LogOut, FileText, UserPlus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,9 @@ const baseNavigation = [
   { name: "Intake", href: "/intake", icon: Building2, roles: ["ADMIN", "AGENT"] },
   { name: "Submissions", href: "/submissions", icon: Send, roles: ["ADMIN", "AGENT"] },
   { name: "Documents", href: "/documents", icon: FileText, roles: ["ADMIN", "AGENT"] },
+  { name: "Recruit", href: "/recruiter/invite", icon: UserPlus, roles: ["ADMIN", "RECRUITER"] },
+  { name: "Reps", href: "/admin/reps", icon: Users, roles: ["ADMIN"] },
+  { name: "Vendors", href: "/admin/vendors", icon: Building2, roles: ["ADMIN"] },
   { name: "Admin", href: "/admin", icon: Settings, roles: ["ADMIN"] },
 ];
 
@@ -23,12 +26,14 @@ export function NavShell({ children }: { children: React.ReactNode }) {
   // Filter navigation based on user role
   const navigation = baseNavigation.filter((item) => {
     if (!user) return true; // Show all during loading/unauthenticated
+    // Extra check for Vendors - must be ADMIN
+    if (item.name === "Vendors" && user?.role !== "ADMIN") return false;
     return item.roles.includes(user.role);
   });
 
   const handleLogout = async () => {
-    // Clear demo user from localStorage
-    localStorage.removeItem("demo_user");
+    // Clear user from localStorage
+    localStorage.removeItem("current_user");
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
   };

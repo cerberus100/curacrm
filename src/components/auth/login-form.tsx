@@ -1,56 +1,51 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 export function LoginForm() {
-  const router = useRouter();
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("🔐 Login form submitted");
     setIsLoading(true);
 
     try {
-      // Demo mode - set role based on email
-      console.log("📧 Email:", email);
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed");
+      }
+
+      // Store user data for client-side use
+      localStorage.setItem("current_user", JSON.stringify(data.user));
       
-      // Determine role based on email
-      const role = email.toLowerCase().includes("admin") ? "ADMIN" : "AGENT";
-      console.log("👤 Assigned role:", role);
-      
-      // Store demo user in localStorage for role-based UI
-      const demoUser = {
-        id: "demo-" + Date.now(),
-        name: role === "ADMIN" ? "Admin User" : "Sales Agent",
-        email: email,
-        role: role as "ADMIN" | "AGENT",
-        active: true,
-      };
-      localStorage.setItem("demo_user", JSON.stringify(demoUser));
-      console.log("💾 Stored demo user:", demoUser);
-      
-      await new Promise(resolve => setTimeout(resolve, 600));
-      
-      console.log("✅ Showing success toast");
       toast({
         title: "✅ Welcome to CuraGenesis",
-        description: `Logged in as ${role === "ADMIN" ? "Admin" : "Sales Agent"}`,
+        description: `Logged in as ${data.user.role === "ADMIN" ? "Admin" : data.user.role === "RECRUITER" ? "Recruiter" : "Sales Agent"}`,
       });
       
-      console.log("🚀 Navigating to /dashboard");
-      window.location.href = "/dashboard";
+      // Redirect based on role and onboarding status
+      if (data.user.role === "AGENT" && data.user.onboardStatus !== "ACTIVE") {
+        window.location.href = "/onboard";
+      } else {
+        window.location.href = "/dashboard";
+      }
     } catch (error) {
-      console.error("❌ Login error:", error);
       toast({
         title: "Login Failed",
         description: error instanceof Error ? error.message : "Please try again",
@@ -87,96 +82,99 @@ export function LoginForm() {
         
         {/* Tagline */}
         <p 
-          className="text-sm font-medium tracking-widest uppercase"
+          className="text-lg tracking-widest"
           style={{ color: '#B0BDC5' }}
         >
-          The Beginning of Health and Wellness
+          SALES CRM PORTAL
         </p>
       </div>
 
-      {/* Login Card */}
-      <div 
-        className="relative z-10 w-full max-w-md p-8 rounded-xl"
-        style={{ 
-          backgroundColor: '#102833',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)'
-        }}
-      >
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email Input */}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-regular" style={{ color: '#B0BDC5' }}>
-              Email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="agent@curagenesis.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="h-11 bg-[#0B1A22] border-[#1A2F3E] text-white placeholder:text-gray-500 focus:border-[#0E9FB7] focus:ring-1 focus:ring-[#0E9FB7] transition-colors"
-            />
-          </div>
-          
-          {/* Password Input */}
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-regular" style={{ color: '#B0BDC5' }}>
-              Password
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="h-11 bg-[#0B1A22] border-[#1A2F3E] text-white placeholder:text-gray-500 focus:border-[#0E9FB7] focus:ring-1 focus:ring-[#0E9FB7] transition-colors"
-            />
-          </div>
+      {/* Form Container */}
+      <div className="relative z-10 w-full max-w-md">
+        <div 
+          className="rounded-3xl p-8"
+          style={{
+            backgroundColor: 'rgba(11, 26, 34, 0.85)',
+            border: '1px solid rgba(30, 65, 82, 0.5)',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)'
+          }}
+        >
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Input */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-regular" style={{ color: '#B0BDC5' }}>
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                autoFocus
+                className="h-11 bg-[#0B1A22] border-[#1A2F3E] text-white placeholder:text-gray-500 focus:border-[#0E9FB7] focus:ring-1 focus:ring-[#0E9FB7] transition-colors"
+              />
+            </div>
+            
+            {/* Password Input */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-regular" style={{ color: '#B0BDC5' }}>
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="h-11 bg-[#0B1A22] border-[#1A2F3E] text-white placeholder:text-gray-500 focus:border-[#0E9FB7] focus:ring-1 focus:ring-[#0E9FB7] transition-colors"
+              />
+            </div>
 
-          {/* Remember Me */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="remember"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="w-4 h-4 rounded border-[#1A2F3E] bg-[#0B1A22] text-[#0E9FB7] focus:ring-[#0E9FB7] focus:ring-offset-0"
-            />
-            <Label 
-              htmlFor="remember" 
-              className="text-sm font-regular cursor-pointer" 
-              style={{ color: '#B0BDC5' }}
+            {/* Remember Me */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="remember"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-[#1A2F3E] bg-[#0B1A22] text-[#0E9FB7] focus:ring-[#0E9FB7] focus:ring-offset-0"
+              />
+              <Label 
+                htmlFor="remember" 
+                className="text-sm font-regular cursor-pointer" 
+                style={{ color: '#B0BDC5' }}
+              >
+                Remember me
+              </Label>
+            </div>
+
+            {/* Sign In Button */}
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full h-11 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02]"
+              style={{
+                backgroundColor: '#0E9FB7',
+                boxShadow: '0 4px 15px rgba(14, 159, 183, 0.3)',
+              }}
             >
-              Remember me
-            </Label>
-          </div>
-
-          {/* Sign In Button */}
-          <Button 
-            type="submit" 
-            className="w-full h-11 text-white font-semibold rounded-lg transition-all hover:shadow-lg"
-            style={{
-              background: 'linear-gradient(135deg, #007F96 0%, #0E9FB7 100%)',
-            }}
-            disabled={isLoading}
-          >
-            {isLoading ? "Signing in..." : "Sign In"}
-          </Button>
-
-          {/* Demo Mode Note */}
-          <p className="text-center text-xs mt-4" style={{ color: '#6B7A85' }}>
-            Demo mode - use any credentials to continue
-          </p>
-        </form>
-      </div>
-
-      {/* Footer */}
-      <div className="absolute bottom-6 text-center text-xs" style={{ color: '#6B7A85' }}>
-        <p>© 2025 CuraGenesis. All rights reserved.</p>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );

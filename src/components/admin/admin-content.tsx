@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Settings, UserPlus, Users } from "lucide-react";
+import { Settings, UserPlus, Users, FileText } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface User {
@@ -23,6 +24,7 @@ interface User {
 
 export function AdminContent() {
   const { toast} = useToast();
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInviteForm, setShowInviteForm] = useState(false);
@@ -380,11 +382,37 @@ export function AdminContent() {
       </Card>
 
       <Card>
-        <CardContent className="py-8 text-center">
-          <Settings className="h-12 w-12 mx-auto text-[color:var(--muted)] mb-3" />
-          <p className="text-[color:var(--muted)]">
-            Additional admin features coming soon
-          </p>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Common administrative tasks</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button
+              variant="outline"
+              className="h-auto py-6 flex flex-col items-center gap-3"
+              onClick={() => router.push("/admin/documents")}
+            >
+              <FileText className="h-8 w-8" />
+              <div>
+                <div className="font-semibold">Document Library</div>
+                <div className="text-xs text-muted-foreground">
+                  Upload and distribute documents
+                </div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto py-6 flex flex-col items-center gap-3"
+              disabled
+            >
+              <Settings className="h-8 w-8" />
+              <div>
+                <div className="font-semibold">System Settings</div>
+                <div className="text-xs text-muted-foreground">Coming soon</div>
+              </div>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

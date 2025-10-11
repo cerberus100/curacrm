@@ -1,46 +1,59 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { requireAdmin } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth-helpers";
 
-// Force dynamic rendering for routes using cookies()
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/users
- * Admin-only: List all users
+ * List users (admins see all, reps see only themselves)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Require admin access
-    await requireAdmin();
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const users = await db.user.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        active: true,
-        onboardedAt: true,
-        firstLoginAt: true,
-        createdAt: true,
-        _count: {
-          select: { accounts: true },
-        },
-      },
-    });
+    const { searchParams } = new URL(request.url);
+    const roleFilter = searchParams.get("role");
 
-    return NextResponse.json({ users });
+    // Build where clause
+    const where: any = roleFilter ? { role: roleFilter.toUpperCase() as any, active: true } : undefined;
+
+    // Admin sees all users; reps see only themselves
+    const items = user.role === "ADMIN"
+      ? await prisma.user.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
+            onboardedAt: true,
+            createdAt: true,
+            _count: {
+              select: { accounts: true },
+            },
+          },
+          orderBy: { name: "asc" },
+        })
+      : await prisma.user.findMany({
+          where: { id: user.id },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true,
+          },
+        });
+
+    return NextResponse.json({ items });
   } catch (error) {
     console.error("GET /api/users error:", error);
-
-    if (error instanceof Error && error.message.includes("Forbidden")) {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      );
-    }
 
     return NextResponse.json(
       { error: "Failed to fetch users" },

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MetricsClient, type DateRange } from "@/lib/curagenesis-client";
-import { env } from "@/lib/env";
 import { z } from "zod";
+
+export const dynamic = 'force-dynamic';
 
 const RequestSchema = z.object({
   dateRange: z.enum(["30d", "60d", "90d"]).default("30d"),
@@ -16,15 +16,61 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { dateRange } = RequestSchema.parse(body);
 
-    // Create metrics client with server-side API key
-    const client = new MetricsClient(
-      process.env.NEXT_PUBLIC_CG_METRICS_BASE,
-      env.CG_METRICS_API_KEY
+    // Fetch real geographical data from database
+    const { prisma } = await import("@/lib/db");
+    const { getCurrentUser } = await import("@/lib/auth-helpers");
+    
+    const user = await getCurrentUser();
+    const isAgent = user?.role === "AGENT";
+    const accountFilter = isAgent && user ? { ownerRepId: user.id } : {};
+    
+    // Get accounts with orders grouped by state
+    const accountsByState = await prisma.account.groupBy({
+      by: ['state'],
+      where: {
+        ...accountFilter,
+        state: { not: null }
+      },
+      _count: {
+        id: true
+      }
+    });
+    
+    // Get order data by state
+    const stateData = await Promise.all(
+      accountsByState.map(async (stateGroup) => {
+        const orders = await prisma.order.findMany({
+          where: {
+            account: {
+              ...accountFilter,
+              state: stateGroup.state
+            }
+          }
+        });
+        
+        const totalSales = orders.reduce((sum, order) => sum + parseFloat(order.totalAmount.toString()), 0);
+        const avgOrderValue = orders.length > 0 ? totalSales / orders.length : 0;
+        
+        return {
+          state: stateGroup.state || "Unknown",
+          stateCode: stateGroup.state?.substring(0, 2).toUpperCase() || "XX",
+          practices: stateGroup._count.id,
+          orders: orders.length,
+          sales: Math.round(totalSales),
+          avgOrderValue: Math.round(avgOrderValue)
+        };
+      })
     );
-
-    const data = await client.geo(dateRange as DateRange);
-
-    return NextResponse.json(data);
+    
+    // Sort by sales and take top 5
+    const topStates = stateData
+      .sort((a, b) => b.sales - a.sales)
+      .slice(0, 5);
+    
+    return NextResponse.json({
+      topStates,
+      totalStates: accountsByState.length
+    });
   } catch (error) {
     console.error("POST /api/kpi/geo error:", error);
     

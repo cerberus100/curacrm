@@ -27,10 +27,13 @@ export function containsPHI(text: string): boolean {
 // ENUMS
 // ============================================================================
 
-export const RoleEnum = z.enum(["ADMIN", "AGENT"]);
-export const AccountStatusEnum = z.enum(["PENDING", "ACTIVE", "INACTIVE", "SUBMITTED"]);
+export const RoleEnum = z.enum(["ADMIN", "RECRUITER", "AGENT"]);
+export const AccountStatusEnum = z.enum(["PENDING", "ACTIVE", "INACTIVE", "SUBMITTED", "DORMANT", "CLOSED"]);
 export const ContactTypeEnum = z.enum(["clinical", "provider", "admin", "billing"]);
 export const SubmissionStatusEnum = z.enum(["PENDING", "SUCCESS", "FAILED"]);
+export const OnboardStatusEnum = z.enum(["INVITED", "EMAIL_CREATED", "CRM_USER_CREATED", "PENDING_DOCS", "ACTIVE", "SUSPENDED"]);
+export const DocTypeEnum = z.enum(["BAA", "HIRE_AGREEMENT", "W9", "OTHER"]);
+export const DocStatusEnum = z.enum(["PENDING", "SENT", "SIGNED", "REJECTED"]);
 
 // ============================================================================
 // USER SCHEMA
@@ -45,6 +48,25 @@ export const UserSchema = z.object({
 });
 
 export type UserInput = z.infer<typeof UserSchema>;
+
+// ============================================================================
+// RECRUITER SCHEMAS
+// ============================================================================
+
+export const CreateRecruitInviteSchema = z.object({
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  personal_email: z.string().email("Invalid email address"),
+});
+
+export const BulkRecruitCsvSchema = z.array(CreateRecruitInviteSchema);
+
+export const CompleteOnboardingSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+  accept_terms: z.boolean().refine(val => val === true, {
+    message: "You must accept the terms to continue"
+  }),
+});
 
 // ============================================================================
 // ACCOUNT SCHEMA

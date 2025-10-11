@@ -28,13 +28,32 @@ export function RealTimeNotifications() {
 
     const fetchNotifications = async () => {
       try {
-        const response = await fetch("/api/notifications/recent");
+        const response = await fetch("/api/notifications/recent", {
+          credentials: 'include',
+          cache: 'no-store'
+        });
+        
+        // Handle 401 gracefully - stop polling if unauthorized
+        if (response.status === 401) {
+          console.log("Notifications: Not authorized, stopping polling");
+          setIsPolling(false);
+          setNotifications([]);
+          return;
+        }
+        
         if (response.ok) {
           const data = await response.json();
-          setNotifications(data.notifications || []);
+          // Defensive check - ensure data.notifications exists and is an array
+          if (data && Array.isArray(data.notifications)) {
+            setNotifications(data.notifications.filter(Boolean));
+          } else {
+            setNotifications([]);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch notifications:", error);
+        // Stop polling on repeated errors
+        setIsPolling(false);
       }
     };
 

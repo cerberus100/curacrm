@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/auth-helpers";
 
 // Prevent static generation of this route
 export const dynamic = 'force-dynamic';
@@ -12,23 +12,29 @@ export const runtime = 'nodejs';
  */
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    const user = await getCurrentUser();
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) {
+      // Return empty notifications for unauthenticated users instead of error
+      return NextResponse.json({
+        success: true,
+        notifications: []
+      });
     }
 
-    // Get user to determine which notifications to show
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    // Get full user with accounts
+    const fullUser = await prisma.user.findUnique({
+      where: { id: user.id },
       include: {
         accounts: true
       }
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!fullUser) {
+      return NextResponse.json({
+        success: true,
+        notifications: []
+      });
     }
 
     // Get recent notifications from settings table
@@ -50,9 +56,9 @@ export async function GET(request: NextRequest) {
         const value = setting.value as any;
         
         // Filter by user's accounts or admin role
-        if (user.role === "ADMIN" || 
-            (value.repId && value.repId === userId) ||
-            (value.accountId && user.accounts.some(acc => acc.id === value.accountId))) {
+        if (fullUser.role === "ADMIN" || 
+            (value.repId && value.repId === fullUser.id) ||
+            (value.accountId && fullUser.accounts.some(acc => acc.id === value.accountId))) {
           return {
             id: setting.key,
             ...value

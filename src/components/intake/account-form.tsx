@@ -531,7 +531,7 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
                     {match.city}, {match.state} • {match.npiOrg} • {match.phoneDisplay}
                   </p>
                   <p className="text-[color:var(--muted)]">
-                    Rep: {match.ownerRep.name} • Status: {match.status}
+                    Rep: {match.ownerRep?.name || "Unassigned"} • Status: {match.status}
                   </p>
                 </div>
               ))}

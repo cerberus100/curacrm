@@ -56,7 +56,7 @@ export function SubmissionDrawer({ submission, onClose }: SubmissionDrawerProps)
                 )}
               </div>
               <div className="text-sm space-y-1">
-                <p><span className="text-[color:var(--muted)]">Rep:</span> {submission.account.ownerRep.name}</p>
+                <p><span className="text-[color:var(--muted)]">Rep:</span> {submission.account.ownerRep?.name || "Unassigned"}</p>
                 <p><span className="text-[color:var(--muted)]">Submitted:</span> {formatDateTime(submission.createdAt)}</p>
                 <p><span className="text-[color:var(--muted)]">Idempotency Key:</span> <code className="text-xs">{submission.idempotencyKey}</code></p>
               </div>

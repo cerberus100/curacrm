@@ -1,0 +1,2 @@
+-- Add password column for authentication
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password VARCHAR(255);

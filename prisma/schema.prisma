@@ -13,6 +13,7 @@ model User {
   id                    String    @id @default(uuid())
   name                  String
   email                 String    @unique
+  password              String?   // Hashed password
   role                  Role
   active                Boolean   @default(true)
   onboardedAt           DateTime? @map("onboarded_at")
@@ -23,13 +24,30 @@ model User {
   baaCompletedAt        DateTime? @map("baa_completed_at")
   w9Completed           Boolean   @default(false) @map("w9_completed")
   w9CompletedAt         DateTime? @map("w9_completed_at")
+  
+  // onboarding
+  corpEmail         String?       @unique @map("corp_email")
+  crmTempPassword   String?       @map("crm_temp_password")
+  emailTempPassword String?       @map("email_temp_password")
+  onboardStatus     OnboardStatus? @map("onboard_status")
+  suspensionReason  String?       @map("suspension_reason")
+  
+  recruiterInvitedById String?    @map("recruiter_invited_by_id")
+  recruiterInvitedBy   User?      @relation("RecruiterInvite", fields: [recruiterInvitedById], references: [id])
+  recruiterInvites     User[]     @relation("RecruiterInvite")
+  
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  accounts        Account[]
-  submissions     Submission[]
-  documents       Document[]
-  createdInvites  InviteToken[] @relation("CreatedInvites")
+  accounts            Account[]
+  submissions         Submission[]
+  documents           Document[]
+  createdInvites      InviteToken[] @relation("CreatedInvites")
+  repProfile          RepProfile?
+  userDocuments       UserDocument[]
+  activities          Activity[]
+  uploadedDocuments   LibraryDocument[] @relation("UploadedDocuments")
+  receivedDocuments   DocumentRecipient[] @relation("ReceivedDocuments")
 
   @@map("users")
 }
@@ -64,6 +82,8 @@ model Account {
   ownerRep    User?        @relation(fields: [ownerRepId], references: [id])
   contacts    Contact[]
   submissions Submission[]
+  orders      Order[]
+  activities  Activity[]
 
   @@map("accounts")
 }
@@ -91,21 +111,28 @@ model Contact {
 
 // BAA/W9 Documents
 model Document {
-  id       String        @id @default(uuid())
-  userId   String        @map("user_id")
-  type     DocumentType
-  fileName String        @map("file_name")
-  fileUrl  String        @map("file_url")
-  fileSize Int           @map("file_size")
-  mimeType String        @map("mime_type")
-  status   DocumentStatus @default(PENDING)
-  signedAt DateTime?     @map("signed_at")
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  type        DocumentType
+  fileName    String        @map("file_name")
+  fileUrl     String        @map("file_url")
+  fileSize    Int           @map("file_size")
+  mimeType    String        @map("mime_type")
+  status      DocumentStatus @default(PENDING)
+  signedAt    DateTime?     @map("signed_at")
+  uploadedBy  String?       @map("uploaded_by") // Admin who uploaded
+  s3Key       String?       @map("s3_key") // S3 object key
+  s3Bucket    String?       @map("s3_bucket") // S3 bucket name
+  description String?       // Optional description
+  isTemplate  Boolean       @default(false) @map("is_template") // Template vs user-specific
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   user User @relation(fields: [userId], references: [id])
 
   @@map("documents")
+  @@index([userId])
+  @@index([type])
 }
 
 // API Call History
@@ -146,6 +173,177 @@ model InviteToken {
   @@map("invite_tokens")
 }
 
+// Vendors
+model Vendor {
+  id           String    @id @default(uuid())
+  name         String
+  contactName  String    @map("contact_name")
+  contactEmail String    @map("contact_email")
+  phone        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  products     Product[]
+
+  @@map("vendors")
+}
+
+// Vendor Products
+model Product {
+  id         String   @id @default(uuid())
+  vendorId   String   @map("vendor_id")
+  name       String   @map("product_name")
+  sku        String   @unique
+  unitPrice  Decimal  @map("unit_price") @db.Decimal(10, 2)
+  category   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+// Rep Profile for metrics
+model RepProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  user         User     @relation(fields: [userId], references: [id])
+
+  // metrics rollups (denormalized, updated nightly or on invoice webhook)
+  totalSalesUsd       Decimal  @default(0) @map("total_sales_usd") @db.Decimal(12, 2)
+  totalProfitUsd      Decimal  @default(0) @map("total_profit_usd") @db.Decimal(12, 2)
+  activeAccountsCount Int      @default(0) @map("active_accounts_count")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("rep_profiles")
+}
+
+// User Documents for onboarding
+model UserDocument {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  user       User      @relation(fields: [userId], references: [id])
+  type       DocType
+  status     DocStatus @default(PENDING)
+  fileKey    String?   @map("file_key") // s3 key for signed file
+  envelopeId String?   @map("envelope_id") // DocuSign/Sign service id
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("user_documents")
+}
+
+// Activity log for account timeline
+model Activity {
+  id        String   @id @default(uuid())
+  accountId String   @map("account_id")
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // "note", "status_change", "reactivation", etc.
+  subject   String
+  body      String?
+  createdAt DateTime @default(now())
+
+  @@map("activities")
+  @@index([accountId])
+}
+
+// Account assignment audit trail
+model AccountAssignment {
+  id         String   @id @default(uuid())
+  accountId  String   @map("account_id")
+  repId      String   @map("rep_id")
+  assignedBy String   @map("assigned_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("account_assignments")
+  @@index([accountId])
+  @@index([repId])
+}
+
+// Document Library (Admin managed documents)
+model LibraryDocument {
+  id           String              @id @default(uuid())
+  title        String
+  type         String              // 'w9', 'baa', 'policy', 'other'
+  description  String?
+  fileKey      String              @map("file_key") // S3 key or local storage key
+  fileName     String              @map("file_name")
+  mimeType     String              @map("mime_type")
+  sizeBytes    Int                 @map("size_bytes")
+  uploadedById String              @map("uploaded_by_id")
+  uploadedBy   User                @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  recipients   DocumentRecipient[]
+
+  @@map("library_documents")
+  @@index([uploadedById])
+  @@index([type])
+}
+
+// Document recipients (who the document was sent to)
+model DocumentRecipient {
+  id         String          @id @default(uuid())
+  documentId String          @map("document_id")
+  document   LibraryDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  repId      String          @map("rep_id")
+  rep        User            @relation("ReceivedDocuments", fields: [repId], references: [id])
+  status     String          @default("sent") // sent, viewed, acknowledged
+  sentAt     DateTime        @default(now()) @map("sent_at")
+  viewedAt   DateTime?       @map("viewed_at")
+
+  @@map("document_recipients")
+  @@index([documentId])
+  @@index([repId])
+  @@unique([documentId, repId])
+}
+
+// Orders (from CuraGenesis)
+model Order {
+  id              String      @id @default(uuid())
+  orderId         String      @unique @map("order_id") // CuraGenesis order ID
+  practiceId      String      @map("practice_id")
+  accountId       String?     @map("account_id")
+  orderDate       DateTime    @map("order_date")
+  totalAmount     Decimal     @map("total_amount") @db.Decimal(10, 2)
+  status          String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  account         Account?    @relation(fields: [accountId], references: [id])
+  items           OrderItem[]
+
+  @@map("orders")
+}
+
+// Order Items with vendor cost tracking
+model OrderItem {
+  id               String   @id @default(uuid())
+  orderId          String   @map("order_id")
+  productName      String   @map("product_name")
+  quantity         Int
+  unitPrice        Decimal  @map("unit_price") @db.Decimal(10, 2)
+  totalPrice       Decimal  @map("total_price") @db.Decimal(10, 2)
+  
+  // Vendor cost tracking (private - never exposed to reps)
+  vendorProductId  String?  @map("vendor_product_id")
+  vendorProduct    Product? @relation(fields: [vendorProductId], references: [id])
+  unitCostUsd      Decimal? @map("unit_cost_usd") @db.Decimal(10, 2)
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
 // System Settings
 model Setting {
   key       String   @id
@@ -159,6 +357,7 @@ model Setting {
 // Enums
 enum Role {
   ADMIN
+  RECRUITER
   AGENT
 }
 
@@ -167,6 +366,8 @@ enum AccountStatus {
   ACTIVE
   INACTIVE
   SUBMITTED
+  DORMANT
+  CLOSED
 }
 
 enum ContactType {
@@ -186,6 +387,29 @@ enum DocumentStatus {
   PENDING
   SIGNED
   EXPIRED
+  REJECTED
+}
+
+enum OnboardStatus {
+  INVITED
+  EMAIL_CREATED
+  CRM_USER_CREATED
+  PENDING_DOCS
+  ACTIVE
+  SUSPENDED
+}
+
+enum DocType {
+  BAA
+  HIRE_AGREEMENT
+  W9
+  OTHER
+}
+
+enum DocStatus {
+  PENDING
+  SENT
+  SIGNED
   REJECTED
 }
 

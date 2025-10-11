@@ -13,12 +13,15 @@ import { ConversionKPIsSection, SalesPerformanceSection, RetentionSection, Opera
 import { SegmentBreakdown } from "./segment-breakdown";
 import { PracticeSyncStatus } from "./practice-sync-status";
 import { RealTimeNotifications } from "./real-time-notifications";
+import { FinancialMetrics } from "./financial-metrics";
 import type { DateRange } from "@/lib/kpi-types";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function DashboardContent() {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [activeTab, setActiveTab] = useState<"overview" | "segments" | "team" | "practices">("overview");
   const { overview, geo, segments, leaderboard, isLoading, error } = useKPIData(dateRange);
+  const { user, isAdmin } = useCurrentUser();
 
   return (
     <div className="space-y-8">
@@ -95,6 +98,9 @@ export function DashboardContent() {
         <>
           {/* Real-time notifications */}
           <RealTimeNotifications />
+          
+          {/* Financial metrics for admin users */}
+          {isAdmin && <FinancialMetrics />}
           
           {/* 1. Conversion Funnel */}
           <ConversionKPIsSection data={overview.conversion} />

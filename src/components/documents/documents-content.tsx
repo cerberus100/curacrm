@@ -1,25 +1,40 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Download, CheckCircle2, Clock, XCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { DocumentUploadAdmin } from "./DocumentUploadAdmin";
 
 interface Document {
   id: string;
+  title: string;
   type: string;
+  description: string | null;
   fileName: string;
-  status: string;
-  signedAt: string | null;
+  mimeType: string;
+  sizeBytes: number;
   createdAt: string;
-  updatedAt: string;
+  uploadedBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  sentAt?: string;
+  viewedAt?: string | null;
+  status?: string;
+  signedAt?: string | null;
+  updatedAt?: string;
 }
 
 export function DocumentsContent() {
+  const router = useRouter();
   const { toast } = useToast();
-  const { user } = useCurrentUser();
+  const { user, isAdmin } = useCurrentUser();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +44,10 @@ export function DocumentsContent() {
 
   const fetchDocuments = async () => {
     try {
-      const response = await fetch("/api/documents/my");
+      const response = await fetch("/api/documents/my", {
+        credentials: "include",
+        cache: "no-store",
+      });
       if (!response.ok) throw new Error("Failed to fetch documents");
       const data = await response.json();
       setDocuments(data.documents || []);
@@ -43,6 +61,18 @@ export function DocumentsContent() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownload = (documentId: string) => {
+    window.open(`/api/documents/download?id=${documentId}`, "_blank");
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
   };
 
   const getStatusIcon = (status: string) => {
@@ -86,11 +116,24 @@ export function DocumentsContent() {
   return (
     <div className="space-y-6">
       <div>
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/dashboard")}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Dashboard
+        </Button>
         <h1 className="text-3xl font-bold">My Documents</h1>
         <p className="text-[color:var(--muted)] mt-1">
           View and manage your independent contractor documents
         </p>
       </div>
+
+      {/* Admin Upload Section */}
+      {isAdmin && (
+        <DocumentUploadAdmin />
+      )}
 
       {/* Onboarding Status */}
       {user && (
@@ -154,28 +197,32 @@ export function DocumentsContent() {
                   key={doc.id}
                   className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-card/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(doc.status)}
+                  <div className="flex items-center gap-3 flex-1">
+                    <FileText className="h-5 w-5 text-primary" />
                     <div>
-                      <div className="font-medium">{getDocumentTypeLabel(doc.type)}</div>
+                      <div className="font-medium">{doc.title}</div>
                       <div className="text-sm text-[color:var(--muted)]">
-                        {doc.fileName}
-                        {doc.signedAt && (
-                          <span className="ml-2">
-                            • Signed {new Date(doc.signedAt).toLocaleDateString()}
+                        {doc.fileName} • {formatBytes(doc.sizeBytes)} • {getDocumentTypeLabel(doc.type)}
+                        {doc.viewedAt && (
+                          <span className="ml-2 text-green-400">
+                            • ✓ Viewed {new Date(doc.viewedAt).toLocaleDateString()}
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    {getStatusBadge(doc.status)}
-                    <button
-                      className="p-2 hover:bg-primary/10 rounded transition-colors"
-                      title="Download document"
+                    <div className="text-xs text-[color:var(--muted)]">
+                      From: {doc.uploadedBy.name}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownload(doc.id)}
                     >
-                      <Download className="h-4 w-4" />
-                    </button>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
                   </div>
                 </div>
               ))}

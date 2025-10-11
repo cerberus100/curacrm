@@ -3,51 +3,84 @@ import { prisma } from "@/lib/db";
 import { AccountSchema } from "@/lib/validations";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/accounts
  * List accounts (filtered by rep if not admin)
  */
 export async function GET(request: NextRequest) {
   try {
+    const { getCurrentUser } = await import("@/lib/auth-helpers");
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const repId = searchParams.get("repId");
-    const status = searchParams.get("status");
+    const q = searchParams.get("q") || undefined;
+    const status = searchParams.get("status") || undefined;
+    const take = Number(searchParams.get("take") || 50);
+    const skip = Number(searchParams.get("skip") || 0);
 
     // Build where clause
-    const where: any = {};
+    const whereBase: any = {};
     
-    if (repId) {
-      where.ownerRepId = repId;
+    // Search query
+    if (q) {
+      whereBase.OR = [
+        { practiceName: { contains: q, mode: "insensitive" } },
+        { city: { contains: q, mode: "insensitive" } },
+        { state: { contains: q, mode: "insensitive" } },
+      ];
     }
     
+    // Status filter
     if (status) {
-      where.status = status;
+      whereBase.status = status;
     }
 
-    const accounts = await prisma.account.findMany({
-      where,
-      include: {
-        ownerRep: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        contacts: true,
-        _count: {
-          select: {
-            contacts: true,
-            submissions: true,
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
+    // Role-based scoping: Reps see only their accounts, Admins see all
+    const where = user.role === "ADMIN" 
+      ? whereBase 
+      : { AND: [{ ownerRepId: user.id }, whereBase] };
 
-    return NextResponse.json({ accounts });
+    const [accounts, total] = await Promise.all([
+      prisma.account.findMany({
+        where,
+        include: {
+          ownerRep: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          contacts: true,
+          _count: {
+            select: {
+              contacts: true,
+              submissions: true,
+            },
+          },
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+        take,
+        skip,
+      }),
+      prisma.account.count({ where }),
+    ]);
+
+    return NextResponse.json({ 
+      accounts, 
+      total,
+      take,
+      skip,
+      isFiltered: user.role !== "ADMIN"
+    });
   } catch (error) {
     console.error("GET /api/accounts error:", error);
     return NextResponse.json(

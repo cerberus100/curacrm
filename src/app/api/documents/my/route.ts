@@ -1,40 +1,81 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { Role } from "@prisma/client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-/**
- * GET /api/documents/my
- * Get current user's documents
- */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // In demo mode, get user from localStorage (client-side)
-    // In production, this would use session/auth
+    const user = await getCurrentUser();
     
-    // For demo, we'll return documents for a demo user
-    // In production, you'd get the userId from the session
-    const demoUserId = "demo-rep-id";
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-    const documents = await db.document.findMany({
-      where: {
-        userId: demoUserId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    // Reps see only documents sent to them
+    // Admins see all documents
+    let documents;
+
+    if (user.role === Role.ADMIN) {
+      documents = await db.libraryDocument.findMany({
+        include: {
+          uploadedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+    } else {
+      const recipients = await db.documentRecipient.findMany({
+        where: {
+          repId: user.id,
+        },
+        include: {
+          document: {
+            include: {
+              uploadedBy: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          sentAt: "desc",
+        },
+      });
+
+      documents = recipients.map((r) => ({
+        ...r.document,
+        sentAt: r.sentAt,
+        viewedAt: r.viewedAt,
+        status: r.status,
+      }));
+    }
 
     return NextResponse.json({
       success: true,
       documents,
     });
   } catch (error) {
-    console.error("Error fetching user documents:", error);
+    console.error("Failed to fetch user documents:", error);
     return NextResponse.json(
       { error: "Failed to fetch documents" },
       { status: 500 }
     );
   }
 }
-

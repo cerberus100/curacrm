@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, FileSpreadsheet } from "lucide-react";
+import { Plus, FileSpreadsheet, ArrowLeft } from "lucide-react";
 import { AccountsList } from "./accounts-list";
 import { AccountForm } from "./account-form";
 import { CSVBulkImport } from "./csv-bulk-import";
 
 export function IntakeContent() {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
@@ -44,6 +46,14 @@ export function IntakeContent() {
         <>
           <div className="flex items-center justify-between">
             <div>
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/dashboard")}
+                className="mb-4"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
               <h1 className="text-3xl font-bold">Practice Intake</h1>
               <p className="text-[color:var(--muted)] mt-1">
                 Manage practice accounts and contacts

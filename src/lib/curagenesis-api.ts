@@ -117,7 +117,7 @@ export class CuraGenesisUserAPI {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-vendor-token': this.vendorToken
+          'x-vendor-key': this.vendorToken
         },
         body: JSON.stringify({
           ...data,
@@ -152,6 +152,11 @@ export class CuraGenesisUserAPI {
   async getPractices(cursor?: string): Promise<PracticesResponse> {
     try {
       const url = new URL(`${this.baseUrl}/api/partner/v1/practices`);
+      
+      // Add required query parameters
+      url.searchParams.set('page_size', '50');
+      url.searchParams.set('include', 'metrics'); // Include totalOrders
+      
       if (cursor) {
         url.searchParams.set('cursor', cursor);
       }
@@ -159,10 +164,10 @@ export class CuraGenesisUserAPI {
       console.log('Fetching practices from:', url.toString());
       
       const response = await fetch(url.toString(), {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-vendor-token': this.vendorToken
+          'x-vendor-key': this.vendorToken
         }
       });
 

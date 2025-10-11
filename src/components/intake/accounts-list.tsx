@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/utils";
 import { Building2 } from "lucide-react";
+import AssignRep from "@/components/accounts/AssignRep";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 interface Account {
   id: string;
@@ -14,8 +16,9 @@ interface Account {
   state: string;
   status: string;
   ownerRep: {
+    id: string;
     name: string;
-  };
+  } | null;
   updatedAt: string;
   _count: {
     contacts: number;
@@ -24,6 +27,7 @@ interface Account {
 }
 
 export function AccountsList({ onEdit, refreshKey }: { onEdit: (id: string) => void; refreshKey: number }) {
+  const { isAdmin } = useCurrentUser();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,10 +38,20 @@ export function AccountsList({ onEdit, refreshKey }: { onEdit: (id: string) => v
         const response = await fetch("/api/accounts");
         if (response.ok) {
           const data = await response.json();
-          setAccounts(data.accounts);
+          // Defensive check - ensure data.accounts exists and is an array
+          if (data && Array.isArray(data.accounts)) {
+            setAccounts(data.accounts);
+          } else {
+            console.error("Invalid accounts response:", data);
+            setAccounts([]);
+          }
+        } else {
+          console.error("Intake load failed - HTTP", response.status, await response.text());
+          setAccounts([]);
         }
       } catch (error) {
-        console.error("Failed to fetch accounts:", error);
+        console.error("Intake load failed", error);
+        setAccounts([]);
       } finally {
         setIsLoading(false);
       }
@@ -113,7 +127,14 @@ export function AccountsList({ onEdit, refreshKey }: { onEdit: (id: string) => v
                   </div>
                   <div>
                     <p className="text-[color:var(--muted)] text-xs">Rep</p>
-                    <p className="font-medium">{account.ownerRep.name}</p>
+                    {isAdmin ? (
+                      <AssignRep
+                        accountId={account.id}
+                        currentRepId={account.ownerRep?.id}
+                      />
+                    ) : (
+                      <p className="font-medium">{account.ownerRep?.name || "Unassigned"}</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-[color:var(--muted)] text-xs">Contacts / Submissions</p>

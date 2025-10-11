@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+export const dynamic = 'force-dynamic';
+
 const RequestSchema = z.object({
   dateRange: z.enum(["30d", "60d", "90d"]).default("30d"),
 });
@@ -15,26 +17,61 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { dateRange } = RequestSchema.parse(body);
 
-    // In production, this would call CuraGenesis API
-    // For now, return mock data structure
+    // Fetch real segment data from database
+    const { prisma } = await import("@/lib/db");
+    const { getCurrentUser } = await import("@/lib/auth-helpers");
     
-    const mockData = {
-      bySpecialty: [
-        { segment: "Wound Care", orders: 145, sales: 287500, practices: 23, avgOrderValue: 1983 },
-        { segment: "Orthopedics", orders: 132, sales: 264000, practices: 19, avgOrderValue: 2000 },
-        { segment: "Podiatry", orders: 98, sales: 196000, practices: 16, avgOrderValue: 2000 },
-        { segment: "Dermatology", orders: 76, sales: 152000, practices: 12, avgOrderValue: 2000 },
-        { segment: "Other", orders: 54, sales: 108000, practices: 9, avgOrderValue: 2000 },
-      ],
-      byLeadSource: [
-        { segment: "Referral", orders: 187, sales: 374000, practices: 28, avgOrderValue: 2000 },
-        { segment: "Conference", orders: 143, sales: 286000, practices: 21, avgOrderValue: 2000 },
-        { segment: "Direct Outreach", orders: 112, sales: 224000, practices: 18, avgOrderValue: 2000 },
-        { segment: "Partner", orders: 63, sales: 126000, practices: 12, avgOrderValue: 2000 },
-      ],
-    };
-
-    return NextResponse.json(mockData);
+    const user = await getCurrentUser();
+    const isAgent = user?.role === "AGENT";
+    const accountFilter = isAgent && user ? { ownerRepId: user.id } : {};
+    
+    // Get accounts with specialty grouping
+    const accounts = await prisma.account.findMany({
+      where: accountFilter,
+      include: {
+        orders: {
+          include: {
+            items: true
+          }
+        }
+      }
+    });
+    
+    // Group by specialty (if you have a specialty field, otherwise use practice type)
+    const specialtyMap = new Map<string, { orders: number; sales: number; practices: Set<string> }>();
+    
+    accounts.forEach(account => {
+      const specialty = "General Practice"; // Placeholder - add specialty field to Account if needed
+      
+      if (!specialtyMap.has(specialty)) {
+        specialtyMap.set(specialty, { orders: 0, sales: 0, practices: new Set() });
+      }
+      
+      const data = specialtyMap.get(specialty)!;
+      data.practices.add(account.id);
+      
+      account.orders.forEach(order => {
+        data.orders++;
+        data.sales += parseFloat(order.totalAmount.toString());
+      });
+    });
+    
+    const bySpecialty = Array.from(specialtyMap.entries()).map(([segment, data]) => ({
+      segment,
+      orders: data.orders,
+      sales: Math.round(data.sales),
+      practices: data.practices.size,
+      avgOrderValue: data.orders > 0 ? Math.round(data.sales / data.orders) : 0
+    })).sort((a, b) => b.sales - a.sales);
+    
+    // For lead source, we'd need a leadSource field on Account
+    // For now, return empty array since we don't have that data
+    const byLeadSource: typeof bySpecialty = [];
+    
+    return NextResponse.json({
+      bySpecialty,
+      byLeadSource
+    });
   } catch (error) {
     console.error("POST /api/kpi/segments error:", error);
     

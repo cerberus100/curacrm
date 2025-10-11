@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/utils";
-import { Send, AlertCircle, CheckCircle2, XCircle, FileText } from "lucide-react";
+import { Send, AlertCircle, CheckCircle2, XCircle, FileText, ArrowLeft } from "lucide-react";
 import { SubmissionDrawer } from "./submission-drawer";
 
 interface Submission {
@@ -26,6 +27,7 @@ interface Submission {
 }
 
 export function SubmissionsContent() {
+  const router = useRouter();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
@@ -85,6 +87,14 @@ export function SubmissionsContent() {
     <>
       <div className="space-y-6">
         <div>
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/dashboard")}
+            className="mb-4"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
           <h1 className="text-3xl font-bold">Submissions</h1>
           <p className="text-[color:var(--muted)] mt-1">
             Track all CuraGenesis API submissions
@@ -127,7 +137,7 @@ export function SubmissionsContent() {
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                           <div>
                             <p className="text-[color:var(--muted)] text-xs">Rep</p>
-                            <p className="font-medium">{submission.account.ownerRep.name}</p>
+                            <p className="font-medium">{submission.account.ownerRep?.name || "Unassigned"}</p>
                           </div>
                           <div>
                             <p className="text-[color:var(--muted)] text-xs">Submitted</p>
