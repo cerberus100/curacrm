@@ -56,6 +56,10 @@ COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/scripts/startup.sh ./scripts/startup.sh
 RUN chmod +x scripts/startup.sh
 
+# Create uploads directory with proper permissions
+RUN mkdir -p /app/uploads/documents /app/uploads/user-documents && \
+    chown -R nextjs:nodejs /app/uploads
+
 USER nextjs
 
 EXPOSE 3000

@@ -84,10 +84,14 @@ export async function POST(request: NextRequest) {
       success: true,
       document,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Document upload error:", error);
     return NextResponse.json(
-      { error: "Failed to upload document" },
+      { 
+        error: "Failed to upload document",
+        details: error.message || "Unknown error",
+        code: error.code || null
+      },
       { status: 500 }
     );
   }
