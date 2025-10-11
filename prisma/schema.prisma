@@ -227,14 +227,37 @@ model UserDocument {
   id         String    @id @default(uuid())
   userId     String    @map("user_id")
   user       User      @relation(fields: [userId], references: [id])
-  type       DocType
+  type       String    // Changed from DocType enum to String for flexibility
   status     DocStatus @default(PENDING)
-  fileKey    String?   @map("file_key") // s3 key for signed file
+  fileName   String?   @map("file_name")
+  fileKey    String?   @map("file_key") // s3 key or local storage key
+  mimeType   String?   @map("mime_type")
+  sizeBytes  Int?      @map("size_bytes")
+  signedAt   DateTime? @map("signed_at")
   envelopeId String?   @map("envelope_id") // DocuSign/Sign service id
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
 
   @@map("user_documents")
+  @@index([userId])
+  @@index([type])
+}
+
+// Required document types that all reps must complete
+model RequiredDocumentType {
+  id          String   @id @default(uuid())
+  name        String   // e.g., "W-9 Tax Form", "BAA Agreement"
+  code        String   @unique // e.g., "w9", "baa", "hire_agreement"
+  description String?
+  required    Boolean  @default(true)
+  order       Int      @default(0) // Display order
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("required_document_types")
+  @@index([active])
+  @@index([order])
 }
 
 // Activity log for account timeline

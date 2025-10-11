@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, CheckCircle2, Clock, XCircle, ArrowLeft } from "lucide-react";
+import { FileText, Download, ArrowLeft } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { DocumentUploadAdmin } from "./DocumentUploadAdmin";
+import { OnboardingDocuments } from "./OnboardingDocuments";
+import { RequiredDocumentsManager } from "./RequiredDocumentsManager";
 
 interface Document {
   id: string;
@@ -75,39 +76,13 @@ export function DocumentsContent() {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "signed":
-      case "approved":
-        return <CheckCircle2 className="h-4 w-4 text-green-400" />;
-      case "pending":
-        return <Clock className="h-4 w-4 text-yellow-400" />;
-      case "rejected":
-        return <XCircle className="h-4 w-4 text-red-400" />;
-      default:
-        return <FileText className="h-4 w-4 text-[color:var(--muted)]" />;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      signed: "default",
-      approved: "default",
-      pending: "secondary",
-      rejected: "destructive",
-    };
-    return (
-      <Badge variant={variants[status] || "secondary"}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
   const getDocumentTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       baa: "Business Associate Agreement",
       w9: "IRS Form W-9",
       contract: "Contract",
+      policy: "Policy",
+      training: "Training",
       other: "Other Document",
     };
     return labels[type] || type;
@@ -124,62 +99,30 @@ export function DocumentsContent() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Button>
-        <h1 className="text-3xl font-bold">My Documents</h1>
+        <h1 className="text-3xl font-bold">Documents</h1>
         <p className="text-[color:var(--muted)] mt-1">
-          View and manage your independent contractor documents
+          {isAdmin 
+            ? "Manage document requirements and view library documents"
+            : "Upload your onboarding documents and view shared resources"
+          }
         </p>
       </div>
 
-      {/* Admin Upload Section */}
+      {/* Admin: Manage Required Document Types */}
       {isAdmin && (
-        <DocumentUploadAdmin />
+        <RequiredDocumentsManager />
       )}
 
-      {/* Onboarding Status */}
-      {user && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Onboarding Status</CardTitle>
-            <CardDescription>Your compliance document completion status</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="flex items-center gap-3 p-3 border border-border rounded-lg">
-                {user.baaCompleted ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-400" />
-                ) : (
-                  <Clock className="h-5 w-5 text-yellow-400" />
-                )}
-                <div>
-                  <div className="font-medium">Business Associate Agreement</div>
-                  <div className="text-xs text-[color:var(--muted)]">
-                    {user.baaCompleted ? "✓ Completed" : "Pending"}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 border border-border rounded-lg">
-                {user.w9Completed ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-400" />
-                ) : (
-                  <Clock className="h-5 w-5 text-yellow-400" />
-                )}
-                <div>
-                  <div className="font-medium">IRS Form W-9</div>
-                  <div className="text-xs text-[color:var(--muted)]">
-                    {user.w9Completed ? "✓ Completed" : "Pending"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* User: My Onboarding Documents */}
+      {!isAdmin && (
+        <OnboardingDocuments />
       )}
 
-      {/* Documents List */}
+      {/* Library Documents - Shared documents from admin */}
       <Card>
         <CardHeader>
-          <CardTitle>Document History</CardTitle>
-          <CardDescription>All your submitted and signed documents</CardDescription>
+          <CardTitle>Shared Documents Library</CardTitle>
+          <CardDescription>Documents shared with you by administration</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
