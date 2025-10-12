@@ -50,6 +50,10 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
     ownerRepId: CURRENT_USER_ID,
     status: "PENDING",
   });
+  const [primaryContact, setPrimaryContact] = useState({
+    name: "",
+    position: "",
+  });
   const [contacts, setContacts] = useState<any[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
@@ -151,6 +155,12 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
     if (!account.practiceName || account.practiceName.length < 3) {
       newErrors.practiceName = "Practice name must be at least 3 characters";
     }
+    if (!primaryContact.name || primaryContact.name.length < 2) {
+      newErrors.contactName = "Contact name is required";
+    }
+    if (!primaryContact.position || primaryContact.position.length < 2) {
+      newErrors.contactPosition = "Position/title is required";
+    }
     if (!account.specialty) {
       newErrors.specialty = "Specialty is required";
     }
@@ -183,10 +193,17 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
       const url = accountId ? `/api/accounts/${accountId}` : "/api/accounts";
       const method = accountId ? "PATCH" : "POST";
 
+      // Prepare account data with primary contact
+      const accountData = {
+        ...account,
+        primaryContactName: primaryContact.name,
+        primaryContactPosition: primaryContact.position,
+      };
+
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(account),
+        body: JSON.stringify(accountData),
       });
 
       if (response.ok) {
@@ -350,6 +367,32 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
               />
               {errors.practiceName && (
                 <p className="text-sm text-destructive mt-1">{errors.practiceName}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="contactName">Primary Contact Name *</Label>
+              <Input
+                id="contactName"
+                value={primaryContact.name}
+                onChange={(e) => setPrimaryContact({ ...primaryContact, name: e.target.value })}
+                placeholder="Dr. John Smith"
+              />
+              {errors.contactName && (
+                <p className="text-sm text-destructive mt-1">{errors.contactName}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="contactPosition">Position/Title *</Label>
+              <Input
+                id="contactPosition"
+                value={primaryContact.position}
+                onChange={(e) => setPrimaryContact({ ...primaryContact, position: e.target.value })}
+                placeholder="Practice Manager, Medical Director, etc."
+              />
+              {errors.contactPosition && (
+                <p className="text-sm text-destructive mt-1">{errors.contactPosition}</p>
               )}
             </div>
 
