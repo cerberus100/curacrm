@@ -9,8 +9,23 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 async function runMigrations() {
   try {
+    // Add primary contact fields to accounts
     await prisma.\$executeRaw\`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS primary_contact_name TEXT\`;
     await prisma.\$executeRaw\`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS primary_contact_position TEXT\`;
+    
+    // Create Team enum if not exists
+    await prisma.\$executeRaw\`DO \$\$ BEGIN
+      CREATE TYPE \"Team\" AS ENUM ('IN_HOUSE', 'VANTAGE_POINT');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END \$\$\`;
+    
+    // Add team field to users
+    await prisma.\$executeRaw\`ALTER TABLE users ADD COLUMN IF NOT EXISTS team \"Team\"\`;
+    
+    // Create index
+    await prisma.\$executeRaw\`CREATE INDEX IF NOT EXISTS users_team_idx ON users(team) WHERE team IS NOT NULL\`;
+    
     console.log('✅ Schema updates complete');
   } catch (error) {
     console.log('⚠️  Schema update error:', error.message);
