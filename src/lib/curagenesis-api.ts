@@ -89,7 +89,7 @@ export interface PracticesResponse {
 }
 
 export class CuraGenesisUserAPI {
-  private baseUrl = 'https://sr9bkv1k3k.execute-api.us-east-1.amazonaws.com/Admin-Prod';
+  private baseUrl = 'https://w6mxt54h5f.execute-api.us-east-2.amazonaws.com/Prod';
   private vendorToken: string;
 
   constructor() {

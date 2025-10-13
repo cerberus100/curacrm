@@ -2,9 +2,24 @@
 
 echo "🚀 Starting CuraGenesis CRM..."
 
-# Note: Database migrations should be applied manually
-# Run this SQL on your database first:
-# ALTER TABLE users ADD COLUMN IF NOT EXISTS password VARCHAR(255);
+# Run critical schema updates
+echo "📊 Running schema updates..."
+node -e "
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+async function runMigrations() {
+  try {
+    await prisma.\$executeRaw\`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS primary_contact_name TEXT\`;
+    await prisma.\$executeRaw\`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS primary_contact_position TEXT\`;
+    console.log('✅ Schema updates complete');
+  } catch (error) {
+    console.log('⚠️  Schema update error:', error.message);
+  } finally {
+    await prisma.\$disconnect();
+  }
+}
+runMigrations();
+" || echo "⚠️  Schema updates skipped"
 
 # Seed admin user (skip if password column doesn't exist)
 echo "🌱 Ensuring admin user exists..."

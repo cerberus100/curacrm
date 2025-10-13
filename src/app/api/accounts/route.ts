@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
               id: true,
               name: true,
               email: true,
+              team: true, // Include team (admins see all, agents see their own)
             },
           },
           contacts: true,

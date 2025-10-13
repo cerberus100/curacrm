@@ -18,6 +18,7 @@ interface Account {
   ownerRep: {
     id: string;
     name: string;
+    team?: string | null;
   } | null;
   updatedAt: string;
   _count: {
@@ -126,14 +127,28 @@ export function AccountsList({ onEdit, refreshKey }: { onEdit: (id: string) => v
                     </p>
                   </div>
                   <div>
-                    <p className="text-[color:var(--muted)] text-xs">Rep</p>
+                    <p className="text-[color:var(--muted)] text-xs">Rep{(isAdmin || account.ownerRep?.team === "VANTAGE_POINT") && account.ownerRep?.team && " / Team"}</p>
                     {isAdmin ? (
-                      <AssignRep
-                        accountId={account.id}
-                        currentRepId={account.ownerRep?.id}
-                      />
+                      <div className="flex flex-col gap-1">
+                        <AssignRep
+                          accountId={account.id}
+                          currentRepId={account.ownerRep?.id}
+                        />
+                        {account.ownerRep?.team && (
+                          <Badge variant="outline" className="text-[10px] w-fit">
+                            {account.ownerRep.team === "IN_HOUSE" ? "In-House" : "Vantage Point"}
+                          </Badge>
+                        )}
+                      </div>
                     ) : (
-                      <p className="font-medium">{account.ownerRep?.name || "Unassigned"}</p>
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">{account.ownerRep?.name || "Unassigned"}</p>
+                        {account.ownerRep?.team === "VANTAGE_POINT" && (
+                          <Badge variant="outline" className="text-[10px] w-fit bg-purple-600/10 text-purple-600">
+                            Vantage Point
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div>

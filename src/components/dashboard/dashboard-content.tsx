@@ -56,13 +56,15 @@ export function DashboardContent() {
             >
               Team
             </Button>
-            <Button
-              variant={activeTab === "practices" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveTab("practices")}
-            >
-              Practices
-            </Button>
+            {isAdmin && (
+              <Button
+                variant={activeTab === "practices" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveTab("practices")}
+              >
+                Practices
+              </Button>
+            )}
           </div>
           <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRange)}>
             <SelectTrigger className="w-[180px]">

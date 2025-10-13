@@ -5,7 +5,7 @@
 
 import { env } from "./env";
 
-const BASE_URL = "https://sr9bkv1k3k.execute-api.us-east-1.amazonaws.com/Admin-Prod/api/partner/v1";
+const BASE_URL = "https://w6mxt54h5f.execute-api.us-east-2.amazonaws.com/Prod/api/partner/v1";
 
 export interface FinancialLineItem {
   qCode: string;

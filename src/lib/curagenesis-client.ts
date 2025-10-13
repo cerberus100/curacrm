@@ -1,6 +1,54 @@
 import { env } from "./env";
 import type { IntakePayload } from "./validations";
 
+// New API payload structure for /admin_createUserWithBaa
+interface BaaPayload {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  baaSigned: boolean;
+  paSigned: boolean;
+  selectedFacility?: string;
+  facilityName: string;
+  facilityAddress: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    phone?: string;
+    fax?: string;
+  };
+  facilityNPI?: string;
+  facilityTIN?: string;
+  facilityPTAN?: string;
+  facilityPhone?: string;
+  facilityFax?: string;
+  shippingContact?: string;
+  primaryContactName?: string;
+  primaryContactEmail?: string;
+  primaryContactPhone?: string;
+  shippingAddresses?: Array<{
+    name: string;
+    line1: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    instructions?: string;
+  }>;
+  physicianInfo?: {
+    name: string;
+    email?: string;
+    npi?: string;
+  };
+  additionalPhysicians?: Array<{
+    name: string;
+    email?: string;
+    npi?: string;
+  }>;
+}
+
 // ============================================================================
 // CURAGENESIS API CLIENT
 // ============================================================================
@@ -13,24 +61,82 @@ export interface CuraGenesisResponse<T = unknown> {
 }
 
 export interface IntakeSuccessResponse {
-  practice_id: string;
-  status: "created" | "updated";
-  message: string;
+  success: boolean;
+  userId: string;
 }
 
 export class CuraGenesisClient {
   private baseUrl: string;
-  private apiKey: string;
+  private vendorToken: string;
   private timeout: number;
 
   constructor() {
-    this.baseUrl = env.CURAGENESIS_API_BASE;
-    this.apiKey = env.CURAGENESIS_API_KEY;
+    // Use the new Prod API endpoint
+    this.baseUrl = 'https://w6mxt54h5f.execute-api.us-east-2.amazonaws.com/Prod';
+    this.vendorToken = env.CURAGENESIS_VENDOR_TOKEN;
     this.timeout = env.CURAGENESIS_API_TIMEOUT_MS;
   }
 
   /**
+   * Transform IntakePayload to BaaPayload format
+   */
+  private transformPayload(payload: IntakePayload): BaaPayload {
+    const primaryContact = payload.contacts[0]; // First contact is primary
+    const [firstName, ...lastNameParts] = primaryContact.full_name.split(" ");
+    const lastName = lastNameParts.join(" ");
+
+    const baaPayload: BaaPayload = {
+      email: primaryContact.email || payload.practice.email || "",
+      firstName: firstName || "",
+      lastName: lastName || "",
+      baaSigned: false,
+      paSigned: false,
+      facilityName: payload.practice.name,
+      facilityAddress: {
+        line1: payload.practice.address.line1 || "",
+        line2: payload.practice.address.line2 || undefined,
+        city: payload.practice.address.city || "",
+        state: payload.practice.address.state,
+        postalCode: payload.practice.address.zip || "",
+        country: "US",
+        phone: payload.practice.phone || undefined,
+      },
+      facilityNPI: payload.practice.npi_org || undefined,
+      facilityTIN: payload.practice.ein_tin || undefined,
+      facilityPhone: payload.practice.phone || undefined,
+      // Use primaryContactName from form if available, fallback to first contact
+      primaryContactName: payload.primaryContactName || primaryContact.full_name,
+      primaryContactEmail: primaryContact.email || undefined,
+      primaryContactPhone: primaryContact.phone || undefined,
+    };
+
+    // Add physician info if available
+    const physicianContact = payload.contacts.find(c => c.contact_type === "PHYSICIAN" || c.npi_individual);
+    if (physicianContact) {
+      baaPayload.physicianInfo = {
+        name: physicianContact.full_name,
+        email: physicianContact.email || undefined,
+        npi: physicianContact.npi_individual || undefined,
+      };
+
+      // Additional physicians
+      const additionalPhysicians = payload.contacts
+        .filter(c => c !== physicianContact && (c.contact_type === "PHYSICIAN" || c.npi_individual));
+      if (additionalPhysicians.length > 0) {
+        baaPayload.additionalPhysicians = additionalPhysicians.map(p => ({
+          name: p.full_name,
+          email: p.email || undefined,
+          npi: p.npi_individual || undefined,
+        }));
+      }
+    }
+
+    return baaPayload;
+  }
+
+  /**
    * Submit practice intake with retry logic
+   * Uses the new /admin_createUserWithBaa endpoint
    * Retries on 5xx errors and timeouts up to 3 times
    */
   async submitIntake(
@@ -40,13 +146,16 @@ export class CuraGenesisClient {
     const maxRetries = 3;
     let lastError: Error | null = null;
 
+    // Transform to new API format
+    const baaPayload = this.transformPayload(payload);
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const response = await this.makeRequest<IntakeSuccessResponse>(
-          "/v1/practices/intake",
+          "/admin_createUserWithBaa",
           {
             method: "POST",
-            body: payload,
+            body: baaPayload,
             idempotencyKey,
           }
         );
@@ -111,7 +220,7 @@ export class CuraGenesisClient {
     try {
       const headers: HeadersInit = {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
+        "x-vendor-token": this.vendorToken,
       };
 
       if (options.idempotencyKey) {

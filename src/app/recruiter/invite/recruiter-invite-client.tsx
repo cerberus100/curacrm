@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 // Tabs component not available, using custom toggle
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload, UserPlus, CheckCircle, XCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import { Upload, UserPlus, CheckCircle, XCircle, AlertCircle, ArrowLeft, Users } from "lucide-react";
 import { getEmailAdapter } from "@/lib/provisioning/emailAdapter";
+import HiresTable from "@/components/recruit/HiresTable";
 
 interface InviteResult {
   email: string;
@@ -20,7 +21,7 @@ interface InviteResult {
 
 export function RecruiterInviteClient() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"single" | "bulk">("single");
+  const [activeTab, setActiveTab] = useState<"single" | "bulk" | "hires">("single");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [personalEmail, setPersonalEmail] = useState("");
@@ -157,6 +158,7 @@ export function RecruiterInviteClient() {
             size="sm"
             onClick={() => setActiveTab("single")}
           >
+            <UserPlus className="mr-2 h-4 w-4" />
             Single Invite
           </Button>
           <Button
@@ -164,7 +166,16 @@ export function RecruiterInviteClient() {
             size="sm"
             onClick={() => setActiveTab("bulk")}
           >
+            <Upload className="mr-2 h-4 w-4" />
             Bulk Upload
+          </Button>
+          <Button
+            variant={activeTab === "hires" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("hires")}
+          >
+            <Users className="mr-2 h-4 w-4" />
+            Hires
           </Button>
         </div>
 
@@ -352,6 +363,8 @@ export function RecruiterInviteClient() {
             </CardContent>
           </Card>
         )}
+
+        {activeTab === "hires" && <HiresTable />}
       </div>
     </div>
   );

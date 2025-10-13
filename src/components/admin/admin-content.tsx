@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Settings, UserPlus, Users, FileText } from "lucide-react";
+import { Settings, UserPlus, Users, FileText, Building2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { TeamManager } from "./TeamManager";
 
 interface User {
   id: string;
@@ -380,6 +381,9 @@ export function AdminContent() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Team Management */}
+      <TeamManager />
 
       <Card>
         <CardHeader>

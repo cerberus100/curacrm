@@ -263,6 +263,10 @@ export const IntakePayloadSchema = z.object({
     lead_source: z.string().nullable(),
   }),
   
+  // NEW: Primary contact info from account form
+  primaryContactName: z.string().nullable().optional(),
+  primaryContactPosition: z.string().nullable().optional(),
+  
   contacts: z.array(
     z.object({
       contact_type: z.string(),
@@ -279,7 +283,7 @@ export const IntakePayloadSchema = z.object({
     id: z.string(),
     name: z.string(),
     email: z.string().email(),
-  }),
+  }).optional(),
 });
 
 export type IntakePayload = z.infer<typeof IntakePayloadSchema>;
@@ -362,13 +366,12 @@ export function formatEinTinDisplay(einTin: string): string {
 
 /**
  * Strip EIN/TIN to just digits for storage
+ * Returns digits as-is (even if incomplete) to allow typing
  */
 export function formatEinTinStorage(einTin: string): string | null {
   const digits = einTin.replace(/\D/g, "");
-  if (digits.length === 9) {
-    return digits;
-  }
-  return null;
+  // Return digits as-is to allow partial input (validation happens on submit)
+  return digits || null;
 }
 
 /**

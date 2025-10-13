@@ -22,6 +22,11 @@ export async function POST(request: NextRequest) {
     const { getCurrentUser } = await import("@/lib/auth-helpers");
     
     const user = await getCurrentUser();
+    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    
     const isAgent = user?.role === "AGENT";
     const accountFilter = isAgent && user ? { ownerRepId: user.id } : {};
     
@@ -36,6 +41,14 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+    
+    // Return empty data if no accounts (graceful fallback)
+    if (!accounts || accounts.length === 0) {
+      return NextResponse.json({
+        bySpecialty: [],
+        byLeadSource: []
+      });
+    }
     
     // Group by specialty (if you have a specialty field, otherwise use practice type)
     const specialtyMap = new Map<string, { orders: number; sales: number; practices: Set<string> }>();

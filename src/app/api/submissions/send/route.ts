@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+      // Include primaryContactName and primaryContactPosition (new fields)
     });
 
     if (!account) {
@@ -65,6 +66,8 @@ export async function POST(request: NextRequest) {
         },
         lead_source: account.leadSource,
       },
+      primaryContactName: (account as any).primaryContactName || null,
+      primaryContactPosition: (account as any).primaryContactPosition || null,
       contacts: account.contacts.map((contact) => ({
         contact_type: contact.contactType,
         full_name: contact.fullName,

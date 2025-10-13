@@ -38,7 +38,7 @@ export async function GET() {
     if (hasToken) {
       // Simple connectivity check
       const response = await fetch(
-        'https://sr9bkv1k3k.execute-api.us-east-1.amazonaws.com/Admin-Prod/api/partner/v1/practices?page_size=1',
+        'https://w6mxt54h5f.execute-api.us-east-2.amazonaws.com/Prod/api/partner/v1/practices?page_size=1',
         {
           method: 'POST',
           headers: {

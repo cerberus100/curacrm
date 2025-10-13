@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, TrendingUp, Users, MapPin, Package } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 interface SyncData {
   syncedAt: string;
@@ -32,8 +33,19 @@ export function PracticeSyncStatus() {
   const [loading, setLoading] = useState(false);
   const [syncData, setSyncData] = useState<SyncData | null>(null);
   const { toast } = useToast();
+  const { isAdmin } = useCurrentUser();
 
   const syncPractices = async () => {
+    // Only admins can sync
+    if (!isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Only administrators can sync practice data",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       const response = await fetch("/api/kpi/sync-practices", {
@@ -64,10 +76,12 @@ export function PracticeSyncStatus() {
   };
 
   useEffect(() => {
-    // Load initial data
-    syncPractices();
+    // Only sync on mount if admin
+    if (isAdmin) {
+      syncPractices();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAdmin]);
 
   if (!syncData) {
     return (
