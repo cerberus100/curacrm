@@ -9,22 +9,20 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 async function runMigrations() {
   try {
-    // Add primary contact fields to accounts
-    await prisma.\$executeRaw\`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS primary_contact_name TEXT\`;
-    await prisma.\$executeRaw\`ALTER TABLE accounts ADD COLUMN IF NOT EXISTS primary_contact_position TEXT\`;
+    console.log('Adding primary_contact_name column...');
+    await prisma.\$executeRawUnsafe('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS primary_contact_name TEXT');
     
-    // Create Team enum if not exists
-    await prisma.\$executeRaw\`DO \$\$ BEGIN
-      CREATE TYPE \"Team\" AS ENUM ('IN_HOUSE', 'VANTAGE_POINT');
-    EXCEPTION
-      WHEN duplicate_object THEN null;
-    END \$\$\`;
+    console.log('Adding primary_contact_position column...');
+    await prisma.\$executeRawUnsafe('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS primary_contact_position TEXT');
     
-    // Add team field to users
-    await prisma.\$executeRaw\`ALTER TABLE users ADD COLUMN IF NOT EXISTS team \"Team\"\`;
+    console.log('Creating Team enum type...');
+    await prisma.\$executeRawUnsafe(\"CREATE TYPE \\\"Team\\\" AS ENUM ('IN_HOUSE', 'VANTAGE_POINT')\").catch(() => console.log('Team enum already exists'));
     
-    // Create index
-    await prisma.\$executeRaw\`CREATE INDEX IF NOT EXISTS users_team_idx ON users(team) WHERE team IS NOT NULL\`;
+    console.log('Adding team column to users...');
+    await prisma.\$executeRawUnsafe('ALTER TABLE users ADD COLUMN IF NOT EXISTS team \\\"Team\\\"');
+    
+    console.log('Creating team index...');
+    await prisma.\$executeRawUnsafe('CREATE INDEX IF NOT EXISTS users_team_idx ON users(team) WHERE team IS NOT NULL');
     
     console.log('✅ Schema updates complete');
   } catch (error) {
