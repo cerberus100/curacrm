@@ -1,0 +1,16 @@
+{
+  "name": "curacrm-mail-ingest-lambda",
+  "version": "1.0.0",
+  "description": "Lambda function to ingest emails from WorkMail into CRM database",
+  "main": "mailIngest.js",
+  "scripts": {
+    "deploy": "zip -r mailIngest.zip mailIngest.js node_modules/ && aws lambda update-function-code --function-name mailIngest --zip-file fileb://mailIngest.zip"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/client-secrets-manager": "^3.0.0",
+    "mailparser": "^3.7.1",
+    "pg": "^8.13.1"
+  }
+}
+
