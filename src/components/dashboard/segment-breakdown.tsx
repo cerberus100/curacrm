@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
-const COLORS = ['#0E9FB7', '#007F96', '#006D80', '#4DA3B0', '#0891A5'];
+const COLORS = ['#0E9FB7', '#007F96', '#006D80', '#4DA3B0', '#0891A5', '#60A5BC', '#3B8FA3', '#1A7A8E'];
 
 export function SegmentBreakdown({ specialtyData, leadSourceData }: { specialtyData?: any[]; leadSourceData?: any[] }) {
   if (!specialtyData && !leadSourceData) return null;
@@ -22,17 +22,17 @@ export function SegmentBreakdown({ specialtyData, leadSourceData }: { specialtyD
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={specialtyData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
                   <XAxis 
                     type="number"
-                    stroke="hsl(var(--foreground))"
+                    stroke="#94a3b8"
                     fontSize={12}
                     tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                   />
                   <YAxis 
                     type="category"
                     dataKey="segment"
-                    stroke="hsl(var(--foreground))"
+                    stroke="#94a3b8"
                     fontSize={11}
                     width={120}
                   />
@@ -97,17 +97,17 @@ export function SegmentBreakdown({ specialtyData, leadSourceData }: { specialtyD
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={leadSourceData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
                   <XAxis 
                     type="number"
-                    stroke="hsl(var(--foreground))"
+                    stroke="#94a3b8"
                     fontSize={12}
                     tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                   />
                   <YAxis 
                     type="category"
                     dataKey="segment"
-                    stroke="hsl(var(--foreground))"
+                    stroke="#94a3b8"
                     fontSize={11}
                     width={100}
                   />

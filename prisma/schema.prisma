@@ -54,6 +54,9 @@ model User {
   // Document Management System
   createdFolders      Folder[] @relation("CreatedFolders")
   uploadedFiles       DocumentFile[] @relation("UploadedFiles")
+  
+  // Email Integration
+  mailMessages        MailMessage[]
 
   @@map("users")
 }
@@ -92,6 +95,7 @@ model Account {
   submissions Submission[]
   orders      Order[]
   activities  Activity[]
+  mailMessages MailMessage[]
 
   @@map("accounts")
 }
@@ -583,4 +587,52 @@ enum DocumentVisibility {
   ADMIN_ONLY      // Only admins
   ROLE_BASED      // Based on role permissions
   CUSTOM          // Based on individual permissions
+}
+
+// ============================================================================
+// EMAIL INTEGRATION (WorkMail Mirror)
+// ============================================================================
+
+// Email Messages (WorkMail mirror)
+model MailMessage {
+  id              String     @id @default(uuid())
+  userId          String     @map("user_id")
+  accountId       String?    @map("account_id") // Link to practice/customer
+  folder          MailFolder @default(INBOX)
+  messageId       String?    @unique @map("message_id") // Email Message-ID header
+  inReplyTo       String?    @map("in_reply_to") // For threading
+  references      String?    // Email References header (for threading)
+  from            String     // Sender email
+  to              String     // Recipient(s) - JSON array or comma-separated
+  cc              String?    // CC recipients
+  bcc             String?    // BCC recipients
+  subject         String     @default("")
+  snippet         String?    // First 150 chars of body
+  bodyText        String?    @map("body_text") @db.Text // Plain text body
+  bodyHtml        String?    @map("body_html") @db.Text // HTML body
+  hasAttachments  Boolean    @default(false) @map("has_attachments")
+  attachmentCount Int        @default(0) @map("attachment_count")
+  isRead          Boolean    @default(false) @map("is_read")
+  isStarred       Boolean    @default(false) @map("is_starred")
+  receivedAt      DateTime   @default(now()) @map("received_at")
+  sentAt          DateTime?  @map("sent_at") // For sent emails
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id])
+  account Account? @relation(fields: [accountId], references: [id])
+
+  @@index([userId, folder, receivedAt])
+  @@index([messageId])
+  @@index([accountId])
+  @@map("mail_messages")
+}
+
+// Mail folder enum
+enum MailFolder {
+  INBOX
+  SENT
+  DRAFT
+  ARCHIVE
+  TRASH
 }

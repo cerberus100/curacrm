@@ -1,6 +1,6 @@
 const MOCK = process.env.NEXT_PUBLIC_MAIL_MOCK === "1";
 
-// --- Mock data (delete when backend ready)
+// --- Mock data (for development only)
 const mockItems = Array.from({ length: 25 }).map((_, i) => ({
   id: `m${i}`,
   userId: "me",
@@ -17,19 +17,40 @@ const mockItems = Array.from({ length: 25 }).map((_, i) => ({
 }));
 
 export async function listMail(folder: "inbox" | "sent", cursor?: string) {
-  // Always use mock mode for now (backend not ready)
-  const filtered = mockItems.filter((m) => m.folder === folder);
-  const start = cursor ? Number(cursor) : 0;
-  const end = start + 10;
-  const page = filtered.slice(start, end);
-  const nextCursor = end < filtered.length ? String(end) : null;
-  return { items: page, nextCursor };
+  // Use mock mode if enabled
+  if (MOCK) {
+    const filtered = mockItems.filter((m) => m.folder === folder);
+    const start = cursor ? Number(cursor) : 0;
+    const end = start + 10;
+    const page = filtered.slice(start, end);
+    const nextCursor = end < filtered.length ? String(end) : null;
+    return { items: page, nextCursor };
+  }
+
+  // Real API call
+  const params = new URLSearchParams({ folder });
+  if (cursor) params.set('cursor', cursor);
+  
+  const response = await fetch(`/api/mail/list?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch mail list');
+  }
+  return response.json();
 }
 
 export async function getMessage(id: string) {
-  // Always use mock mode for now (backend not ready)
-  const m = mockItems.find((x) => x.id === id)!;
-  return { ...m, downloadUrl: "#" };
+  // Use mock mode if enabled
+  if (MOCK) {
+    const m = mockItems.find((x) => x.id === id)!;
+    return { ...m, downloadUrl: "#" };
+  }
+
+  // Real API call
+  const response = await fetch(`/api/mail/message/${id}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch message');
+  }
+  return response.json();
 }
 
 export async function sendMail(data: {
@@ -39,7 +60,23 @@ export async function sendMail(data: {
   html?: string;
   customerId?: string;
 }) {
-  // Always use mock mode for now (backend not ready)
-  return { ok: true, threadId: crypto.randomUUID() };
+  // Use mock mode if enabled
+  if (MOCK) {
+    return { ok: true, threadId: crypto.randomUUID() };
+  }
+
+  // Real API call
+  const response = await fetch('/api/mail/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to send email');
+  }
+  
+  return response.json();
 }
 
