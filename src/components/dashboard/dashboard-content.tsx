@@ -113,8 +113,8 @@ export function DashboardContent() {
           {/* 3. Retention & Growth */}
           <RetentionSection data={overview.retention} />
 
-          {/* 4. Operational Health */}
-          <OperationalSection data={overview.operational} />
+          {/* 4. Operational Health (Admin only) */}
+          {isAdmin && <OperationalSection data={overview.operational} />}
 
           {/* Time Series Charts */}
           <div>
@@ -254,26 +254,27 @@ export function DashboardContent() {
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={geo.topStates}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
                       <XAxis 
                         dataKey="stateCode" 
-                        stroke="hsl(var(--foreground))"
+                        stroke="#94a3b8"
                         fontSize={12}
                       />
                       <YAxis 
-                        stroke="hsl(var(--foreground))"
+                        stroke="#94a3b8"
                         fontSize={12}
                         tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                       />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: "hsl(var(--card))", 
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px"
+                          backgroundColor: "#1e293b", 
+                          border: "1px solid #334155",
+                          borderRadius: "8px",
+                          color: "#e2e8f0"
                         }}
                         formatter={(value: number) => [formatCurrency(value), "Sales"]}
                       />
-                      <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="sales" fill="#0E9FB7" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
