@@ -30,6 +30,7 @@ model User {
   submissions     Submission[]
   documents       Document[]
   createdInvites  InviteToken[] @relation("CreatedInvites")
+  mailMessages    MailMessage[]
 
   @@map("users")
 }
@@ -59,9 +60,10 @@ model Account {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  ownerRep    User?        @relation(fields: [ownerRepId], references: [id])
-  contacts    Contact[]
-  submissions Submission[]
+  ownerRep     User?         @relation(fields: [ownerRepId], references: [id])
+  contacts     Contact[]
+  submissions  Submission[]
+  mailMessages MailMessage[]
 
   @@map("accounts")
 }
@@ -154,10 +156,54 @@ model Setting {
   @@map("settings")
 }
 
+// Email Messages (WorkMail mirror + SES sent)
+model MailMessage {
+  id              String        @id @default(uuid())
+  userId          String        @map("user_id")
+  accountId       String?       @map("account_id") // Link to practice/customer
+  folder          MailFolder    @default(INBOX)
+  messageId       String?       @unique @map("message_id") // Email Message-ID header
+  inReplyTo       String?       @map("in_reply_to") // For threading
+  references      String?       // Email References header (for threading)
+  from            String        // Sender email
+  to              String        // Recipient(s) - JSON array or comma-separated
+  cc              String?       // CC recipients
+  bcc             String?       // BCC recipients
+  subject         String        @default("")
+  snippet         String?       // First 150 chars of body
+  bodyText        String?       @map("body_text") @db.Text // Plain text body
+  bodyHtml        String?       @map("body_html") @db.Text // HTML body
+  s3Key           String?       @map("s3_key") // S3 path to raw .eml file
+  hasAttachments  Boolean       @default(false) @map("has_attachments")
+  attachmentCount Int           @default(0) @map("attachment_count")
+  isRead          Boolean       @default(false) @map("is_read")
+  isStarred       Boolean       @default(false) @map("is_starred")
+  receivedAt      DateTime      @default(now()) @map("received_at")
+  sentAt          DateTime?     @map("sent_at") // For sent emails
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id])
+  account Account? @relation(fields: [accountId], references: [id])
+
+  @@index([userId, folder, receivedAt])
+  @@index([messageId])
+  @@index([accountId])
+  @@map("mail_messages")
+}
+
 // Enums
 enum Role {
   ADMIN
   AGENT
+}
+
+enum MailFolder {
+  INBOX
+  SENT
+  DRAFT
+  ARCHIVE
+  TRASH
 }
 
 enum AccountStatus {
