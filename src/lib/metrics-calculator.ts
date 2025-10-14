@@ -55,12 +55,20 @@ function calculateOrderTotal(order: OrderMedicalItem): number {
 // OVERVIEW METRICS
 // ============================================================================
 
-export async function calculateOverviewMetrics(dateRange: DateRange) {
-  const [facilities, orders, reps] = await Promise.all([
-    getAllFacilities(),
-    getAllOrders(),
+export async function calculateOverviewMetrics(dateRange: DateRange, repEmail?: string) {
+  // If repEmail provided (agent), filter to only that rep's data
+  // Otherwise (admin), get all data
+  const [facilities, allOrders, reps] = await Promise.all([
+    repEmail ? getFacilitiesByRep(repEmail) : getAllFacilities(),
+    getAllOrders(), // We'll filter orders by facility userIds
     getAllReps(),
   ]);
+
+  // For agents, only include orders from their facilities
+  const facilityUserIds = new Set(facilities.map(f => f.UserId));
+  const orders = repEmail 
+    ? allOrders.filter(o => facilityUserIds.has(o.userId))
+    : allOrders;
 
   // Filter by date range
   const recentFacilities = facilities.filter(f => isWithinDateRange(f.createdAt, dateRange));
@@ -332,11 +340,19 @@ export async function calculateOverviewMetrics(dateRange: DateRange) {
 // GEO METRICS
 // ============================================================================
 
-export async function calculateGeoMetrics(dateRange: DateRange) {
-  const [facilities, orders] = await Promise.all([
-    getAllFacilities(),
+export async function calculateGeoMetrics(dateRange: DateRange, repEmail?: string) {
+  // If repEmail provided (agent), filter to only that rep's data
+  // Otherwise (admin), get all data
+  const [facilities, allOrders] = await Promise.all([
+    repEmail ? getFacilitiesByRep(repEmail) : getAllFacilities(),
     getAllOrders(),
   ]);
+
+  // For agents, only include orders from their facilities
+  const facilityUserIds = new Set(facilities.map(f => f.UserId));
+  const orders = repEmail 
+    ? allOrders.filter(o => facilityUserIds.has(o.userId))
+    : allOrders;
 
   const recentOrders = orders.filter(o => isWithinDateRange(o.createdAt, dateRange));
 
@@ -467,11 +483,19 @@ export async function calculateLeaderboardMetrics(dateRange: DateRange) {
 // SEGMENT METRICS
 // ============================================================================
 
-export async function calculateSegmentMetrics(dateRange: DateRange) {
-  const [facilities, orders] = await Promise.all([
-    getAllFacilities(),
+export async function calculateSegmentMetrics(dateRange: DateRange, repEmail?: string) {
+  // If repEmail provided (agent), filter to only that rep's data
+  // Otherwise (admin), get all data
+  const [facilities, allOrders] = await Promise.all([
+    repEmail ? getFacilitiesByRep(repEmail) : getAllFacilities(),
     getAllOrders(),
   ]);
+
+  // For agents, only include orders from their facilities
+  const facilityUserIds = new Set(facilities.map(f => f.UserId));
+  const orders = repEmail 
+    ? allOrders.filter(o => facilityUserIds.has(o.userId))
+    : allOrders;
 
   const recentOrders = orders.filter(o => isWithinDateRange(o.createdAt, dateRange));
 
@@ -515,12 +539,20 @@ export async function calculateSegmentMetrics(dateRange: DateRange) {
 // TERRITORY PERFORMANCE METRICS
 // ============================================================================
 
-export async function calculateTerritoryMetrics(dateRange: DateRange) {
-  const [facilities, orders, reps] = await Promise.all([
-    getAllFacilities(),
+export async function calculateTerritoryMetrics(dateRange: DateRange, repEmail?: string) {
+  // If repEmail provided (agent), filter to only that rep's data
+  // Otherwise (admin), get all data
+  const [facilities, allOrders, reps] = await Promise.all([
+    repEmail ? getFacilitiesByRep(repEmail) : getAllFacilities(),
     getAllOrders(),
     getAllReps(),
   ]);
+
+  // For agents, only include orders from their facilities
+  const facilityUserIds = new Set(facilities.map(f => f.UserId));
+  const orders = repEmail 
+    ? allOrders.filter(o => facilityUserIds.has(o.userId))
+    : allOrders;
 
   const recentOrders = orders.filter(o => isWithinDateRange(o.createdAt, dateRange));
 
