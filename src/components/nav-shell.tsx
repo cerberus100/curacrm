@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Send, Settings, LogOut, FileText, UserPlus, Users } from "lucide-react";
+import { LayoutDashboard, Building2, Send, Settings, LogOut, FileText, UserPlus, Users, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useRouter } from "next/navigation";
@@ -10,8 +10,9 @@ import { useRouter } from "next/navigation";
 const baseNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "AGENT"] },
   { name: "Intake", href: "/intake", icon: Building2, roles: ["ADMIN", "AGENT"] },
-  { name: "Submissions", href: "/submissions", icon: Send, roles: ["ADMIN", "AGENT"] },
+  { name: "Activity Log", href: "/submissions", icon: Send, roles: ["ADMIN"] }, // Renamed, admin-only
   { name: "Documents", href: "/documents", icon: FileText, roles: ["ADMIN", "AGENT"] },
+  { name: "Mail", href: "/mail", icon: Mail, roles: ["ADMIN", "AGENT"] },
   { name: "Recruit", href: "/recruiter/invite", icon: UserPlus, roles: ["ADMIN", "RECRUITER"] },
   { name: "Reps", href: "/admin/reps", icon: Users, roles: ["ADMIN"] },
   { name: "Vendors", href: "/admin/vendors", icon: Building2, roles: ["ADMIN"] },

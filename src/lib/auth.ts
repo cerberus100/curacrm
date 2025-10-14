@@ -37,9 +37,24 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       };
     }
 
-    // Get user ID from cookie
+    // Get user ID from cookie (check both userId and auth-token for compatibility)
     const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    let userId = cookieStore.get("userId")?.value;
+    
+    // If userId cookie doesn't exist, try to decode from auth-token JWT
+    if (!userId) {
+      const token = cookieStore.get("auth-token")?.value;
+      if (token) {
+        try {
+          const jwt = require("jsonwebtoken");
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || "dev-secret-key") as any;
+          userId = decoded.userId;
+        } catch (error) {
+          console.error("JWT verification failed:", error);
+          return null;
+        }
+      }
+    }
 
     if (!userId) {
       return null;

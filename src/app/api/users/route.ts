@@ -23,34 +23,72 @@ export async function GET(request: NextRequest) {
     const where: any = roleFilter ? { role: roleFilter.toUpperCase() as any, active: true } : undefined;
 
     // Admin sees all users; reps see only themselves
-    const items = user.role === "ADMIN"
-      ? await prisma.user.findMany({
-          where,
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    let items;
+    
+    try {
+      items = user.role === "ADMIN"
+        ? await prisma.user.findMany({
+            where,
+            select: {
+              id: true,
+              name: true,
+              email: true,
             role: true,
-            team: true, // Include team for admins
+            // team: true, // DISABLED - DB column doesn't exist yet
             active: true,
-            onboardedAt: true,
-            createdAt: true,
-            _count: {
-              select: { accounts: true },
+              onboardedAt: true,
+              createdAt: true,
+              _count: {
+                select: { accounts: true },
+              },
             },
-          },
-          orderBy: { name: "asc" },
-        })
-      : await prisma.user.findMany({
-          where: { id: user.id },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            active: true,
-          },
-        });
+            orderBy: { name: "asc" },
+          })
+        : await prisma.user.findMany({
+            where: { id: user.id },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              active: true,
+            },
+          });
+    } catch (dbError: any) {
+      // If team column doesn't exist yet, try without it
+      if (dbError.message?.includes('column') && dbError.message?.includes('team')) {
+        console.log("Team column not found in users table, fetching without it");
+        items = user.role === "ADMIN"
+          ? await prisma.user.findMany({
+              where,
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                active: true,
+                onboardedAt: true,
+                createdAt: true,
+                _count: {
+                  select: { accounts: true },
+                },
+              },
+              orderBy: { name: "asc" },
+            })
+          : await prisma.user.findMany({
+              where: { id: user.id },
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                active: true,
+              },
+            });
+      } else {
+        throw dbError;
+      }
+    }
 
     return NextResponse.json({ items });
   } catch (error) {

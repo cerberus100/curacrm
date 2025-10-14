@@ -32,8 +32,9 @@ interface SyncData {
 export function PracticeSyncStatus() {
   const [loading, setLoading] = useState(false);
   const [syncData, setSyncData] = useState<SyncData | null>(null);
+  const [hasSynced, setHasSynced] = useState(false);
   const { toast } = useToast();
-  const { isAdmin } = useCurrentUser();
+  const { isAdmin, loading: userLoading } = useCurrentUser();
 
   const syncPractices = async () => {
     // Only admins can sync
@@ -76,12 +77,18 @@ export function PracticeSyncStatus() {
   };
 
   useEffect(() => {
-    // Only sync on mount if admin
-    if (isAdmin) {
+    // Only sync once when user loads and is admin
+    if (!userLoading && isAdmin && !hasSynced) {
+      setHasSynced(true);
       syncPractices();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin]);
+  }, [userLoading, isAdmin, hasSynced]);
+
+  // Don't render anything if not admin or still loading user
+  if (userLoading || !isAdmin) {
+    return null;
+  }
 
   if (!syncData) {
     return (

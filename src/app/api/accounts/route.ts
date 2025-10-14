@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { AccountSchema } from "@/lib/validations";
+import { logActivity } from "@/lib/activity-logger";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
@@ -46,34 +47,72 @@ export async function GET(request: NextRequest) {
       ? whereBase 
       : { AND: [{ ownerRepId: user.id }, whereBase] };
 
-    const [accounts, total] = await Promise.all([
-      prisma.account.findMany({
-        where,
-        include: {
-          ownerRep: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              team: true, // Include team (admins see all, agents see their own)
+    let accounts, total;
+    
+    try {
+      [accounts, total] = await Promise.all([
+        prisma.account.findMany({
+          where,
+          include: {
+            ownerRep: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                // team: true, // DISABLED - DB column doesn't exist yet
+              },
+            },
+            contacts: true,
+            _count: {
+              select: {
+                contacts: true,
+                submissions: true,
+              },
             },
           },
-          contacts: true,
-          _count: {
-            select: {
+          orderBy: {
+            updatedAt: "desc",
+          },
+          take,
+          skip,
+        }),
+        prisma.account.count({ where }),
+      ]);
+    } catch (dbError: any) {
+      // If team column doesn't exist yet, try without it
+      if (dbError.message?.includes('column') && dbError.message?.includes('team')) {
+        console.log("Team column not found, fetching without it");
+        [accounts, total] = await Promise.all([
+          prisma.account.findMany({
+            where,
+            include: {
+              ownerRep: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
               contacts: true,
-              submissions: true,
+              _count: {
+                select: {
+                  contacts: true,
+                  submissions: true,
+                },
+              },
             },
-          },
-        },
-        orderBy: {
-          updatedAt: "desc",
-        },
-        take,
-        skip,
-      }),
-      prisma.account.count({ where }),
-    ]);
+            orderBy: {
+              updatedAt: "desc",
+            },
+            take,
+            skip,
+          }),
+          prisma.account.count({ where }),
+        ]);
+      } else {
+        throw dbError;
+      }
+    }
 
     return NextResponse.json({ 
       accounts, 
@@ -132,6 +171,17 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    });
+
+    // Log activity
+    await logActivity({
+      userId: validatedData.ownerRepId,
+      action: "ACCOUNT_CREATED",
+      entityType: "Account",
+      entityId: account.id,
+      entityName: account.practiceName,
+      details: `Created practice in ${account.state}`,
+      request,
     });
 
     return NextResponse.json({ account }, { status: 201 });

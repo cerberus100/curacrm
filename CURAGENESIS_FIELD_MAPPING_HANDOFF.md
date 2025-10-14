@@ -184,7 +184,7 @@ Your API accepts these fields, but we **don't collect them yet**:
 
 ## 🎯 EXAMPLE PAYLOAD WE SEND
 
-Here's a **real example** of what we send to your API:
+Here's a **real example** of what we send to your API (including the new rep tracking):
 
 ```json
 {
@@ -224,15 +224,73 @@ Here's a **real example** of what we send to your API:
       "email": "cpatel@abcmedical.com",
       "npi": "1888888888"
     }
-  ]
+  ],
+  
+  // ⭐ NEW - Rep Tracking (pending your API update)
+  "submittingRep": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "asiegel@curagenesis.com",
+    "name": "Alex Siegel"
+  }
 }
 ```
 
 ---
 
-## ⚠️ IMPORTANT: What We Need From You
+## ⚠️ CRITICAL REQUIREMENTS FROM YOU
 
-### **1. Confirm All Fields Are Stored**
+### **1. 🔴 REP TRACKING - MUST HAVE**
+
+**CRITICAL:** When we submit a practice, you MUST store **which sales rep submitted it**.
+
+**Current Problem:**
+- Your database tables don't track the originating rep/agent
+- We can't see which rep is responsible for each practice
+- Commission tracking and rep performance metrics are impossible
+
+**What We Need:**
+
+Add these fields to your `Facilities` or `BAAData` table:
+
+```sql
+-- Add to your facilities/practices table
+submitting_rep_email VARCHAR(255)  -- e.g., "asiegel@curagenesis.com"
+submitting_rep_name VARCHAR(255)   -- e.g., "Alex Siegel"
+submitting_rep_id UUID              -- Our CRM rep ID (optional but helpful)
+submitted_at TIMESTAMP              -- When the practice was submitted
+```
+
+**How We'll Send It:**
+
+We'll add this to the API payload:
+
+```json
+{
+  "email": "doctor@clinic.com",
+  "facilityName": "ABC Medical Center",
+  
+  // ⭐ NEW FIELDS - Please add to your API spec
+  "submittingRep": {
+    "email": "asiegel@curagenesis.com",
+    "name": "Alex Siegel",
+    "id": "550e8400-e29b-41d4-a716-446655440000"  // Our CRM user ID
+  }
+  
+  // ... rest of existing fields
+}
+```
+
+**Why This Is Critical:**
+- ✅ **Commission tracking** - We pay reps based on practices they sign up
+- ✅ **Performance metrics** - Track which reps are most successful
+- ✅ **Account ownership** - Reps need to see "their" practices in their dashboard
+- ✅ **Support routing** - Route issues to the rep who knows the practice
+
+**Timeline:** We need this ASAP. We're redoing our tables to match, but you need to update yours too.
+
+---
+
+### **2. Confirm All Fields Are Stored**
 
 Please verify that your backend **saves all these fields** to your database (BAAData or Facilities table):
 
@@ -240,10 +298,11 @@ Please verify that your backend **saves all these fields** to your database (BAA
 - ✅ `facilityNPI`, `facilityTIN`, `facilityPhone`
 - ✅ Complete `facilityAddress` (all sub-fields)
 - ✅ `physicianInfo` and `additionalPhysicians` arrays
+- 🔴 **`submittingRep` data** ← **CRITICAL NEW REQUIREMENT**
 
 **Why it matters:** Doctors need to see this info when ordering via your portal.
 
-### **2. Consider Adding New Field: `primaryContactPosition`**
+### **3. Consider Adding New Field: `primaryContactPosition`**
 
 We collect this field (`primary_contact_position`) but don't send it because your API doesn't support it yet.
 
@@ -264,7 +323,7 @@ We collect this field (`primary_contact_position`) but don't send it because you
 
 **Timeline:** If you can add this in the next sprint, we'll start sending it immediately.
 
-### **3. Confirm Field Lengths / Validation**
+### **4. Confirm Field Lengths / Validation**
 
 Do you have any **field length limits** or **validation rules** we should know about?
 
@@ -309,11 +368,19 @@ For example:
 
 ## 📞 QUESTIONS FOR YOUR TEAM
 
-1. ✅ **Are you storing `primaryContactName`?** (We just started sending it)
-2. ❓ **Can you add `primaryContactPosition` field?** (We're collecting it but not sending yet)
-3. ❓ **Do you need `facilityFax`?** (We collect it but don't send it)
-4. ❓ **Do you need `shippingAddresses`?** (We can add if needed)
-5. ❓ **Any field length limits or validation rules we should enforce?**
+### 🔴 **CRITICAL - Must Answer:**
+1. **🔴 WHEN will you add `submittingRep` fields to your database?** (We need this for commission tracking)
+2. **🔴 What API field name do you want for rep data?** (We suggested `submittingRep` object)
+3. **🔴 Do you want our CRM rep ID, or just email/name?**
+
+### ⭐ **Important:**
+4. ✅ **Are you storing `primaryContactName`?** (We just started sending it)
+5. ❓ **Can you add `primaryContactPosition` field?** (We're collecting it but not sending yet)
+
+### 💬 **Optional:**
+6. ❓ **Do you need `facilityFax`?** (We collect it but don't send it)
+7. ❓ **Do you need `shippingAddresses`?** (We can add if needed)
+8. ❓ **Any field length limits or validation rules we should enforce?**
 
 ---
 

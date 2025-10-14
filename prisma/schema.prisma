@@ -15,7 +15,7 @@ model User {
   email                 String    @unique
   password              String?   // Hashed password
   role                  Role
-  team                  Team?     // In-house, Vantage Point, etc.
+  // team                  Team?     // In-house, Vantage Point, etc. // COMMENTED OUT - DB column doesn't exist yet
   active                Boolean   @default(true)
   onboardedAt           DateTime? @map("onboarded_at")
   firstLoginAt          DateTime? @map("first_login_at")
@@ -47,8 +47,13 @@ model User {
   repProfile          RepProfile?
   userDocuments       UserDocument[]
   activities          Activity[]
+  activityLogs        ActivityLog[] @relation("UserActivities")
   uploadedDocuments   LibraryDocument[] @relation("UploadedDocuments")
   receivedDocuments   DocumentRecipient[] @relation("ReceivedDocuments")
+  
+  // Document Management System
+  createdFolders      Folder[] @relation("CreatedFolders")
+  uploadedFiles       DocumentFile[] @relation("UploadedFiles")
 
   @@map("users")
 }
@@ -77,8 +82,8 @@ model Account {
   status         AccountStatus @default(PENDING)
   leadSource     String?  @map("lead_source")
   ownerRepId     String?  @map("owner_rep_id")
-  primaryContactName     String?  @map("primary_contact_name")
-  primaryContactPosition String?  @map("primary_contact_position")
+  // primaryContactName     String?  @map("primary_contact_name") // COMMENTED OUT - DB column doesn't exist yet
+  // primaryContactPosition String?  @map("primary_contact_position") // COMMENTED OUT - DB column doesn't exist yet
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -387,10 +392,11 @@ enum Role {
   AGENT
 }
 
-enum Team {
-  IN_HOUSE        // CuraGenesis internal sales team
-  VANTAGE_POINT   // Vantage Point marketing/education partner
-}
+// COMMENTED OUT - DB enum doesn't exist yet
+// enum Team {
+//   IN_HOUSE        // CuraGenesis internal sales team
+//   VANTAGE_POINT   // Vantage Point marketing/education partner
+// }
 
 enum AccountStatus {
   PENDING
@@ -448,4 +454,133 @@ enum SubmissionStatus {
   PENDING
   SUCCESS
   FAILED
+}
+
+// System-wide activity log for admin audit trail
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  user        User     @relation("UserActivities", fields: [userId], references: [id])
+  action      String   // "ACCOUNT_CREATED", "CONTACT_ADDED", "PRACTICE_SUBMITTED", "DOCUMENT_UPLOADED", "LOGIN", etc.
+  entityType  String?  // "Account", "Contact", "Document", "Submission", etc.
+  entityId    String?  @map("entity_id") // ID of the affected entity
+  entityName  String?  @map("entity_name") // Human-readable name (e.g., practice name)
+  details     String?  // Additional context
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  metadata    Json?    // Any extra data
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("activity_log")
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
+// ============================================================================
+// DOCUMENT MANAGEMENT SYSTEM
+// ============================================================================
+
+// Folder structure for organizing documents
+model Folder {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  parentId    String?  @map("parent_id") // For nested folders
+  parent      Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[] @relation("FolderHierarchy")
+  
+  createdById String   @map("created_by_id")
+  createdBy   User     @relation("CreatedFolders", fields: [createdById], references: [id])
+  
+  documents   DocumentFile[]
+  permissions FolderPermission[]
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("folders")
+  @@index([parentId])
+  @@index([createdById])
+}
+
+// Documents with full metadata
+model DocumentFile {
+  id          String   @id @default(uuid())
+  
+  folderId    String?  @map("folder_id")
+  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  
+  title       String
+  description String?
+  fileName    String   @map("file_name")
+  fileKey     String   @map("file_key") // S3 key or local path
+  mimeType    String   @map("mime_type")
+  sizeBytes   Int      @map("size_bytes")
+  
+  tags        String[] // Array of tags for searching
+  
+  uploadedById String  @map("uploaded_by_id")
+  uploadedBy   User    @relation("UploadedFiles", fields: [uploadedById], references: [id])
+  
+  visibility  DocumentVisibility @default(ADMIN_ONLY)
+  
+  permissions DocumentPermission[]
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("document_files")
+  @@index([folderId])
+  @@index([uploadedById])
+  @@index([visibility])
+}
+
+// Folder-level permissions
+model FolderPermission {
+  id        String   @id @default(uuid())
+  folderId  String   @map("folder_id")
+  folder    Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  
+  userId    String?  @map("user_id") // Specific user access
+  role      Role?    // Role-based access (ADMIN, AGENT, RECRUITER)
+  
+  canView   Boolean  @default(true) @map("can_view")
+  canEdit   Boolean  @default(false) @map("can_edit")
+  canDelete Boolean  @default(false) @map("can_delete")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("folder_permissions")
+  @@index([folderId])
+  @@index([userId])
+  @@unique([folderId, userId, role])
+}
+
+// Document-level permissions
+model DocumentPermission {
+  id         String       @id @default(uuid())
+  documentId String       @map("document_id")
+  document   DocumentFile @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  userId     String?      @map("user_id") // Specific user access
+  role       Role?        // Role-based access
+  
+  canView    Boolean      @default(true) @map("can_view")
+  canDownload Boolean     @default(true) @map("can_download")
+  
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  @@map("document_permissions")
+  @@index([documentId])
+  @@index([userId])
+  @@unique([documentId, userId, role])
+}
+
+enum DocumentVisibility {
+  PUBLIC          // All users
+  ADMIN_ONLY      // Only admins
+  ROLE_BASED      // Based on role permissions
+  CUSTOM          // Based on individual permissions
 }

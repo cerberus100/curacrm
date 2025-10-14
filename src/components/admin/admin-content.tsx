@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Settings, UserPlus, Users, FileText, Building2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { TeamManager } from "./TeamManager";
+// import { TeamManager } from "./TeamManager"; // DISABLED - Team feature requires DB migration
 
 interface User {
   id: string;
@@ -47,7 +47,7 @@ export function AdminContent() {
       const response = await fetch("/api/users");
       if (!response.ok) throw new Error("Failed to fetch users");
       const data = await response.json();
-      setUsers(data.users);
+      setUsers(data.items || data.users || []); // Handle both response formats
     } catch (error) {
       console.error("Error fetching users:", error);
       toast({
@@ -382,8 +382,8 @@ export function AdminContent() {
         </CardContent>
       </Card>
 
-      {/* Team Management */}
-      <TeamManager />
+      {/* Team Management - DISABLED until DB migration */}
+      {/* <TeamManager /> */}
 
       <Card>
         <CardHeader>

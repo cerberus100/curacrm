@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { CuraGenesisClient } from "@/lib/curagenesis-client";
 import { IntakePayloadSchema, SubmissionCreateSchema } from "@/lib/validations";
+import { logActivity } from "@/lib/activity-logger";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 
@@ -134,12 +135,36 @@ export async function POST(request: NextRequest) {
           status: "SUBMITTED",
         },
       });
+      
+      // Log successful submission
+      await logActivity({
+        userId: account.ownerRepId || "",
+        action: "PRACTICE_SUBMITTED",
+        entityType: "Submission",
+        entityId: submission.id,
+        entityName: account.practiceName,
+        details: `Successfully submitted to CuraGenesis (HTTP ${response.status})`,
+        metadata: { userId: response.data?.userId },
+        request,
+      });
     } else {
       await prisma.account.update({
         where: { id: accountId },
         data: {
           status: "PENDING",
         },
+      });
+      
+      // Log failed submission
+      await logActivity({
+        userId: account.ownerRepId || "",
+        action: "PRACTICE_SUBMITTED",
+        entityType: "Submission",
+        entityId: submission.id,
+        entityName: account.practiceName,
+        details: `Failed to submit: ${response.error || "Unknown error"}`,
+        metadata: { httpCode: response.status, error: response.error },
+        request,
       });
     }
 

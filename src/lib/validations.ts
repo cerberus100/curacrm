@@ -194,7 +194,7 @@ export const ContactSchema = z.object({
   
   npiIndividual: z
     .string()
-    .regex(NPI_REGEX, "NPI must be exactly 10 digits")
+    .refine((val) => !val || NPI_REGEX.test(val), "NPI must be exactly 10 digits")
     .optional()
     .nullable(),
   

@@ -8,11 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { ArrowLeft, Save, Send, Plus, Trash2, AlertCircle, AlertTriangle } from "lucide-react";
 import { formatPhoneDisplay, formatPhoneE164, formatEinTinDisplay, formatEinTinStorage } from "@/lib/validations";
 import { ContactsManager } from "./contacts-manager";
 import { ConfirmSendDialog } from "./confirm-send-dialog";
-import { US_STATES, SPECIALTIES } from "@/lib/constants";
+import { US_STATES, SPECIALTIES, LEAD_SOURCES } from "@/lib/constants";
 
 interface Account {
   id: string;
@@ -36,18 +37,16 @@ interface Account {
   contacts: any[];
 }
 
-// Mock current user - in production, get from auth
-const CURRENT_USER_ID = "00000000-0000-0000-0000-000000000001";
-
 export function AccountForm({ accountId, onClose }: { accountId: string | null; onClose: () => void }) {
   const { toast } = useToast();
+  const { user } = useCurrentUser(); // Get actual current user
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [account, setAccount] = useState<Partial<Account>>({
     practiceName: "",
     state: "",
-    ownerRepId: CURRENT_USER_ID,
+    ownerRepId: user?.id || "", // Use actual user ID
     status: "PENDING",
   });
   const [primaryContact, setPrimaryContact] = useState({
@@ -59,6 +58,16 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [duplicateMatches, setDuplicateMatches] = useState<any[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Update ownerRepId when user loads
+  useEffect(() => {
+    if (user?.id && !accountId) {
+      setAccount(prev => ({
+        ...prev,
+        ownerRepId: user.id
+      }));
+    }
+  }, [user?.id, accountId]);
 
   // Load existing account
   useEffect(() => {
@@ -84,7 +93,7 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
       };
       fetchAccount();
     }
-  }, [accountId]);
+  }, [accountId, toast]);
 
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhoneDisplay(value);
@@ -97,10 +106,11 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
   };
 
   const handleEinTinChange = (value: string) => {
-    const storage = formatEinTinStorage(value);
+    // Keep raw digits for display, use empty string instead of null
+    const digits = value.replace(/\D/g, "");
     setAccount(prev => ({
       ...prev,
-      einTin: storage,
+      einTin: digits || "", // Use empty string, not null
     }));
   };
 
@@ -507,12 +517,21 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
 
             <div>
               <Label htmlFor="leadSource">Lead Source</Label>
-              <Input
-                id="leadSource"
+              <Select
                 value={account.leadSource || ""}
-                onChange={(e) => setAccount({ ...account, leadSource: e.target.value })}
-                placeholder="Referral, Conference, etc."
-              />
+                onValueChange={(value) => setAccount({ ...account, leadSource: value })}
+              >
+                <SelectTrigger id="leadSource">
+                  <SelectValue placeholder="Select lead source" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAD_SOURCES.map((source) => (
+                    <SelectItem key={source} value={source}>
+                      {source}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="col-span-2">

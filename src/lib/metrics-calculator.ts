@@ -6,6 +6,7 @@ import {
   getAllFacilities,
   getAllOrders,
   getAllReps,
+  getAllUsers,
   getFacilitiesByRep,
   getOrdersByUser,
   type BAADataItem,
@@ -138,6 +139,88 @@ export async function calculateOverviewMetrics(dateRange: DateRange) {
   // Revenue per rep
   const revenuePerRep = reps.length > 0 ? totalSales / reps.length : 0;
 
+  // ============================================================================
+  // ORDER FREQUENCY ANALYSIS
+  // ============================================================================
+  
+  // Group orders by practice
+  const practiceOrderMap = new Map<string, OrderMedicalItem[]>();
+  orders.forEach(order => {
+    if (!practiceOrderMap.has(order.userId)) {
+      practiceOrderMap.set(order.userId, []);
+    }
+    practiceOrderMap.get(order.userId)!.push(order);
+  });
+
+  // Count practices with multiple orders
+  let practicesWithMultipleOrders = 0;
+  let totalDaysBetweenOrders = 0;
+  let practicesWithCalculatedInterval = 0;
+  let totalReorders = 0;
+
+  practiceOrderMap.forEach((practiceOrders) => {
+    if (practiceOrders.length >= 2) {
+      practicesWithMultipleOrders++;
+      totalReorders += practiceOrders.length - 1; // All orders after first are reorders
+
+      // Sort by date
+      const sortedOrders = practiceOrders.sort((a, b) => 
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+
+      // Calculate days between first and second order
+      const firstOrderDate = new Date(sortedOrders[0].createdAt);
+      const secondOrderDate = new Date(sortedOrders[1].createdAt);
+      const daysDiff = Math.floor(
+        (secondOrderDate.getTime() - firstOrderDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (daysDiff >= 0) {
+        totalDaysBetweenOrders += daysDiff;
+        practicesWithCalculatedInterval++;
+      }
+    }
+  });
+
+  const practicesWithMultipleOrdersPercent = totalPractices > 0 
+    ? practicesWithMultipleOrders / totalPractices 
+    : 0;
+
+  const reorderRate = practicesWithOrders.length > 0 
+    ? practicesWithMultipleOrders / practicesWithOrders.length 
+    : 0;
+
+  const avgDaysBetweenOrders = practicesWithCalculatedInterval > 0 
+    ? totalDaysBetweenOrders / practicesWithCalculatedInterval 
+    : 0;
+
+  // ============================================================================
+  // PAYMENT METRICS
+  // ============================================================================
+  
+  const paidOrders = orders.filter(o => o.paid === true).length;
+  const unpaidOrders = orders.length - paidOrders;
+  const paymentRate = orders.length > 0 ? paidOrders / orders.length : 0;
+
+  // ============================================================================
+  // ONBOARDING FUNNEL METRICS
+  // ============================================================================
+  
+  const [users] = await Promise.all([
+    getAllUsers(),
+  ]);
+
+  const totalUsers = users.length;
+  const baaSignedCount = users.filter(u => u.baaSigned === true).length;
+  const paSignedCount = users.filter(u => u.paSigned === true).length;
+  
+  const baaSignedPercent = totalUsers > 0 ? baaSignedCount / totalUsers : 0;
+  const paSignedPercent = totalUsers > 0 ? paSignedCount / totalUsers : 0;
+
+  // ============================================================================
+  // END PAYMENT & ONBOARDING ANALYSIS
+  // ============================================================================
+
   // Time series data (weekly buckets)
   const days = dateRange === "30d" ? 30 : dateRange === "60d" ? 60 : 90;
   const weeks = Math.ceil(days / 7);
@@ -209,8 +292,28 @@ export async function calculateOverviewMetrics(dateRange: DateRange) {
       retention90d: 0.76, // Mock - would need complex cohort analysis
       monthlyActivePractices: activePractices,
       churnRate: 0.09, // Mock
-      avgReorderInterval: 18.5, // Mock - would need order interval calculation
+      avgReorderInterval: avgDaysBetweenOrders, // REAL: calculated from order intervals
       lifetimeValue: averageOrderValue * 10, // Mock: estimate based on repeat rate
+    },
+    orderFrequency: {
+      practicesWithMultipleOrders,
+      practicesWithMultipleOrdersPercent,
+      reorderRate,
+      avgDaysBetweenOrders,
+      totalReorders,
+    },
+    payment: {
+      paidOrders,
+      unpaidOrders,
+      paymentRate,
+      totalOrders: orders.length,
+    },
+    onboarding: {
+      totalUsers,
+      baaSignedCount,
+      paSignedCount,
+      baaSignedPercent,
+      paSignedPercent,
     },
     operational: {
       apiSuccessRate: 0.96, // Mock - would need submission tracking
@@ -303,14 +406,48 @@ export async function calculateLeaderboardMetrics(dateRange: DateRange) {
       
       const averageOrderValue = ordersCount > 0 ? sales / ordersCount : 0;
 
+      // REP EFFICIENCY METRICS
+      const revenuePerPractice = repFacilities.length > 0 ? sales / repFacilities.length : 0;
+      const practicesWithOrders = activePracticesCount;
+      
+      // Calculate avg days to first order for this rep's practices
+      let repTotalDaysToFirstOrder = 0;
+      let repCountWithFirstOrder = 0;
+      
+      repFacilities.forEach(facility => {
+        const facilityOrders = orders
+          .filter(o => o.userId === facility.UserId)
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        
+        if (facilityOrders.length > 0 && facility.createdAt) {
+          const firstOrder = facilityOrders[0];
+          const facilityCreated = new Date(facility.createdAt);
+          const firstOrderDate = new Date(firstOrder.createdAt);
+          const daysDiff = Math.floor((firstOrderDate.getTime() - facilityCreated.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff >= 0) {
+            repTotalDaysToFirstOrder += daysDiff;
+            repCountWithFirstOrder++;
+          }
+        }
+      });
+      
+      const avgDaysToFirstOrder = repCountWithFirstOrder > 0 
+        ? repTotalDaysToFirstOrder / repCountWithFirstOrder 
+        : 0;
+
       return {
         repId: rep.repId,
         repName: `${rep.firstName} ${rep.lastName}`,
+        territory: rep.territory || "N/A",
         practicesAdded,
+        practicesWithOrders,
         activationRate,
         orders: ordersCount,
         sales,
         averageOrderValue,
+        revenuePerPractice,
+        avgDaysToFirstOrder,
       };
     })
   );
@@ -372,5 +509,72 @@ export async function calculateSegmentMetrics(dateRange: DateRange) {
   }).filter(s => s.orders > 0);
 
   return { bySpecialty, byLeadSource };
+}
+
+// ============================================================================
+// TERRITORY PERFORMANCE METRICS
+// ============================================================================
+
+export async function calculateTerritoryMetrics(dateRange: DateRange) {
+  const [facilities, orders, reps] = await Promise.all([
+    getAllFacilities(),
+    getAllOrders(),
+    getAllReps(),
+  ]);
+
+  const recentOrders = orders.filter(o => isWithinDateRange(o.createdAt, dateRange));
+
+  // Group reps by territory
+  const territoryMap = new Map<string, RepItem[]>();
+  reps.forEach(rep => {
+    const territory = rep.territory || "Unassigned";
+    if (!territoryMap.has(territory)) {
+      territoryMap.set(territory, []);
+    }
+    territoryMap.get(territory)!.push(rep);
+  });
+
+  // Calculate metrics per territory
+  const territoryMetrics = Array.from(territoryMap.entries()).map(([territory, territoryReps]) => {
+    const repIds = new Set(territoryReps.map(r => r.repId));
+    
+    // Get all practices from reps in this territory
+    const territoryFacilities = facilities.filter(f => f.salesRep && repIds.has(f.salesRep));
+    const territoryFacilityIds = new Set(territoryFacilities.map(f => f.UserId));
+    
+    // Get orders from those practices
+    const territoryOrders = recentOrders.filter(o => territoryFacilityIds.has(o.userId));
+    
+    // Calculate metrics
+    const sales = territoryOrders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
+    const ordersCount = territoryOrders.length;
+    const practicesCount = territoryFacilities.length;
+    const repsCount = territoryReps.length;
+    
+    const activePracticesCount = new Set(territoryOrders.map(o => o.userId)).size;
+    const activationRate = practicesCount > 0 ? activePracticesCount / practicesCount : 0;
+    
+    const revenuePerRep = repsCount > 0 ? sales / repsCount : 0;
+    const revenuePerPractice = practicesCount > 0 ? sales / practicesCount : 0;
+    const avgOrderValue = ordersCount > 0 ? sales / ordersCount : 0;
+
+    return {
+      territory,
+      reps: repsCount,
+      practices: practicesCount,
+      practicesWithOrders: activePracticesCount,
+      orders: ordersCount,
+      sales,
+      activationRate,
+      revenuePerRep,
+      revenuePerPractice,
+      avgOrderValue,
+    };
+  });
+
+  // Sort by sales descending
+  const territories = territoryMetrics.sort((a, b) => b.sales - a.sales);
+
+  return { territories };
 }
 

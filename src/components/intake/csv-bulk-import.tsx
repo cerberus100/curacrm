@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Upload, FileSpreadsheet, CheckCircle2, XCircle, Send, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -20,11 +21,9 @@ interface SendResult {
   total: number;
 }
 
-// Mock current user - in production, get from auth
-const CURRENT_USER_ID = "00000000-0000-0000-0000-000000000001";
-
 export function CSVBulkImport() {
   const { toast } = useToast();
+  const { user } = useCurrentUser();
   const [file, setFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -95,7 +94,7 @@ export function CSVBulkImport() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           rows,
-          ownerRepId: CURRENT_USER_ID,
+          ownerRepId: user?.id || "",
         }),
       });
 

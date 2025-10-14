@@ -17,16 +17,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all required document types
-    const requiredTypes = await db.requiredDocumentType.findMany({
-      where: { active: true },
-      orderBy: { order: "asc" },
-    });
+    // Try to get required document types (table might not exist yet)
+    let requiredTypes: any[] = [];
+    try {
+      requiredTypes = await db.requiredDocumentType.findMany({
+        where: { active: true },
+        orderBy: { order: "asc" },
+      });
+    } catch (dbError: any) {
+      console.log("RequiredDocumentType table not found, using defaults");
+      // Return empty array if table doesn't exist
+      requiredTypes = [];
+    }
 
     // Get user's uploaded documents
     const userDocs = await db.userDocument.findMany({
       where: { userId: user.id },
-    });
+    }).catch(() => []); // Fallback to empty array if table doesn't exist
 
     // Build response with status for each required type
     const documentStatus = requiredTypes.map((reqType) => {

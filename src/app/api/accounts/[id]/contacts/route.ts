@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ContactSchema } from "@/lib/validations";
+import { logActivity } from "@/lib/activity-logger";
+import { getCurrentUser } from "@/lib/auth-helpers";
 import { z } from "zod";
 
 /**
@@ -43,6 +45,20 @@ export async function POST(
         preferredContactMethod: validatedData.preferredContactMethod,
       },
     });
+
+    // Log activity
+    const user = await getCurrentUser();
+    if (user) {
+      await logActivity({
+        userId: user.id,
+        action: "CONTACT_ADDED",
+        entityType: "Contact",
+        entityId: contact.id,
+        entityName: contact.fullName,
+        details: `Added ${validatedData.contactType} contact to ${account.practiceName}`,
+        request,
+      });
+    }
 
     return NextResponse.json({ contact }, { status: 201 });
   } catch (error) {

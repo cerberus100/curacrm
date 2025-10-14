@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
+import { logActivity } from "@/lib/activity-logger";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
@@ -45,6 +46,14 @@ export async function POST(request: NextRequest) {
     // Verify password
     const isValid = await verifyPassword(password, user.password);
     if (!isValid) {
+      // Log failed login attempt
+      await logActivity({
+        userId: user.id,
+        action: "LOGIN_FAILED",
+        details: `Failed login attempt for ${email}`,
+        request,
+      });
+      
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
@@ -85,6 +94,14 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24, // 24 hours
+    });
+
+    // Log successful login
+    await logActivity({
+      userId: user.id,
+      action: "LOGIN_SUCCESS",
+      details: `Successful login for ${email}`,
+      request,
     });
 
     // Return user data (without password)

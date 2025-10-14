@@ -84,3 +84,18 @@ export const SPECIALTIES = [
   "Urology",
   "Other",
 ];
+
+export const LEAD_SOURCES = [
+  "Referral",
+  "Conference",
+  "Trade Show",
+  "Website",
+  "Cold Call",
+  "Email Campaign",
+  "Social Media",
+  "Partner Network",
+  "Industry Event",
+  "Direct Mail",
+  "Online Search",
+  "Other",
+];
