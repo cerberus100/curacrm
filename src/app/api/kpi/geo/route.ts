@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MetricsClient, type DateRange } from "@/lib/curagenesis-client";
-import { env } from "@/lib/env";
 import { z } from "zod";
+import { calculateGeoMetrics } from "@/lib/metrics-calculator";
 
 const RequestSchema = z.object({
   dateRange: z.enum(["30d", "60d", "90d"]).default("30d"),
@@ -9,22 +8,17 @@ const RequestSchema = z.object({
 
 /**
  * POST /api/kpi/geo
- * Server-side proxy to CuraGenesis geo metrics API
+ * Returns geographic breakdown from real CuraGenesis DynamoDB data
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { dateRange } = RequestSchema.parse(body);
 
-    // Create metrics client with server-side API key
-    const client = new MetricsClient(
-      process.env.NEXT_PUBLIC_CG_METRICS_BASE,
-      env.CG_METRICS_API_KEY
-    );
+    // Calculate geo metrics from real DynamoDB data
+    const metrics = await calculateGeoMetrics(dateRange);
 
-    const data = await client.geo(dateRange as DateRange);
-
-    return NextResponse.json(data);
+    return NextResponse.json(metrics);
   } catch (error) {
     console.error("POST /api/kpi/geo error:", error);
     
