@@ -280,10 +280,10 @@ export async function calculateOverviewMetrics(dateRange: DateRange, repEmail?: 
   return {
     conversion: {
       practicesAdded,
-      sendToCuraGenesisRate: 0.89, // Mock - would need submission tracking
+      sendToCuraGenesisRate: totalPractices > 0 ? 0.89 : 0, // Mock - only show if there's data
       activationRate,
       avgDaysToFirstOrder,
-      dropOffRate30d: 1 - activationRate,
+      dropOffRate30d: practicesAdded > 0 ? (1 - activationRate) : 0,
     },
     sales: {
       totalSalesVolume: totalSales,
@@ -294,14 +294,13 @@ export async function calculateOverviewMetrics(dateRange: DateRange, repEmail?: 
       newOrders,
       repeatOrders,
       revenuePerRep,
-      grossMargin: 0.68, // Mock - would need cost data
     },
     retention: {
-      retention90d: 0.76, // Mock - would need complex cohort analysis
+      retention90d: totalPractices > 0 ? 0.76 : 0, // Mock - only show if there's data
       monthlyActivePractices: activePractices,
-      churnRate: 0.09, // Mock
+      churnRate: totalPractices > 0 ? 0.09 : 0, // Mock - only show if there's data
       avgReorderInterval: avgDaysBetweenOrders, // REAL: calculated from order intervals
-      lifetimeValue: averageOrderValue * 10, // Mock: estimate based on repeat rate
+      lifetimeValue: totalOrders > 0 ? (averageOrderValue * 10) : 0, // Mock: estimate based on repeat rate
     },
     orderFrequency: {
       practicesWithMultipleOrders,

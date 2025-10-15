@@ -124,23 +124,13 @@ export function SalesPerformanceSection({ data }: { data: any }) {
           icon={<ShoppingCart />}
           subtitle="Acquisition vs retention"
         />
+        <KPICard
+          title="Revenue per Rep"
+          value={formatCurrency(data.revenuePerRep || 0)}
+          icon={<DollarSign />}
+          subtitle="Average per sales rep"
+        />
       </div>
-      {data.grossMargin !== undefined && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <KPICard
-            title="Revenue per Rep"
-            value={formatCurrency(data.revenuePerRep || 0)}
-            icon={<DollarSign />}
-            subtitle="Average per sales rep"
-          />
-          <KPICard
-            title="Gross Margin"
-            value={formatPercentage(data.grossMargin || 0)}
-            icon={<Percent />}
-            subtitle="Profitability metric"
-          />
-        </div>
-      )}
     </div>
   );
 }
