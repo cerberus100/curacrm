@@ -68,12 +68,14 @@ export interface IntakeSuccessResponse {
 export class CuraGenesisClient {
   private baseUrl: string;
   private vendorToken: string;
+  private apiKey: string;
   private timeout: number;
 
   constructor() {
     // Use the new Prod API endpoint
     this.baseUrl = 'https://w6mxt54h5f.execute-api.us-east-2.amazonaws.com/Prod';
     this.vendorToken = env.CURAGENESIS_VENDOR_TOKEN;
+    this.apiKey = env.CURAGENESIS_API_KEY;
     this.timeout = env.CURAGENESIS_API_TIMEOUT_MS;
   }
 
