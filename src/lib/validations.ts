@@ -289,7 +289,7 @@ export const IntakePayloadSchema = z.object({
       phone: z.string().nullable(),
       preferred_contact_method: z.string().nullable(),
     })
-  ).min(1, "At least one contact is required"),
+  ),
   
   rep: z.object({
     id: z.string(),

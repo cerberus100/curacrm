@@ -7,12 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Trash2, User } from "lucide-react";
+import { Plus, Trash2, User, Pencil } from "lucide-react";
 import { formatPhoneDisplay, formatPhoneE164 } from "@/lib/validations";
 
 const CONTACT_TYPES = [
-  { value: "clinician", label: "Clinician" },
-  { value: "owner_physician", label: "Owner Physician" },
+  { value: "clinical", label: "Clinical" },
+  { value: "provider", label: "Provider" },
   { value: "admin", label: "Admin" },
   { value: "billing", label: "Billing" },
 ];
@@ -41,8 +41,10 @@ export function ContactsManager({
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [newContact, setNewContact] = useState<Partial<Contact>>({
-    contactType: "clinician",
+    contactType: "clinical",
   });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Partial<Contact>>({});
 
   const handlePhoneChange = (value: string) => {
     const formatted = formatPhoneDisplay(value);
@@ -52,6 +54,47 @@ export function ContactsManager({
       phoneDisplay: formatted,
       phoneE164: e164,
     }));
+  };
+  const startEdit = (c: Contact) => {
+    setEditingId(c.id);
+    setEditing({ ...c });
+  };
+
+  const handleEditPhone = (value: string) => {
+    const formatted = formatPhoneDisplay(value);
+    const e164 = formatPhoneE164(value);
+    setEditing(prev => ({
+      ...prev,
+      phoneDisplay: formatted,
+      phoneE164: e164,
+    }));
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    try {
+      const res = await fetch(`/api/contacts/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editing),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update contact");
+      }
+      const data = await res.json();
+      onContactsChange(contacts.map(c => (c.id === editingId ? data.contact : c)));
+      setEditingId(null);
+      setEditing({});
+      toast({ title: "Updated", description: "Contact updated" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message || "Failed to update contact", variant: "destructive" });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditing({});
   };
 
   const handleAddContact = async () => {
@@ -83,7 +126,7 @@ export function ContactsManager({
       if (response.ok) {
         const data = await response.json();
         onContactsChange([...contacts, data.contact]);
-        setNewContact({ contactType: "clinician" });
+        setNewContact({ contactType: "clinical" });
         setShowForm(false);
         toast({
           title: "Success",
@@ -144,7 +187,7 @@ export function ContactsManager({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Contacts</CardTitle>
-            <CardDescription>At least one contact required before sending</CardDescription>
+            <CardDescription>Optional: add if you have a point of contact</CardDescription>
           </div>
           <Button 
             variant="outline" 
@@ -175,7 +218,7 @@ export function ContactsManager({
               <div>
                 <Label htmlFor="contactType">Contact Type *</Label>
                 <Select
-                  value={newContact.contactType || "clinician"}
+                  value={newContact.contactType || "clinical"}
                   onValueChange={(value) => setNewContact({ ...newContact, contactType: value })}
                 >
                   <SelectTrigger>
@@ -201,16 +244,7 @@ export function ContactsManager({
                 />
               </div>
 
-              <div>
-                <Label htmlFor="npiIndividual">Individual NPI</Label>
-                <Input
-                  id="npiIndividual"
-                  value={newContact.npiIndividual || ""}
-                  onChange={(e) => setNewContact({ ...newContact, npiIndividual: e.target.value })}
-                  placeholder="1234567890"
-                  maxLength={10}
-                />
-              </div>
+              {/* NPI no longer required; field removed for simplicity */}
 
               <div>
                 <Label htmlFor="contactEmail">Email *</Label>
@@ -264,7 +298,7 @@ export function ContactsManager({
         {contacts.length === 0 && !showForm && (
           <div className="text-center py-8">
             <User className="h-12 w-12 mx-auto text-[color:var(--muted)] mb-3" />
-            <p className="text-[color:var(--muted)]">No contacts yet. Add at least one to enable sending.</p>
+            <p className="text-[color:var(--muted)]">No contacts yet. You can add one if desired.</p>
           </div>
         )}
 
@@ -274,43 +308,85 @@ export function ContactsManager({
             className="flex items-start justify-between border border-border rounded-lg p-4"
           >
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="font-medium">{contact.fullName}</h4>
-                <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
-                  {CONTACT_TYPES.find(t => t.value === contact.contactType)?.label}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {contact.title && (
-                  <div>
-                    <span className="text-[color:var(--muted)]">Title:</span> {contact.title}
+              {editingId === contact.id ? (
+                <div className="space-y-3 w-full">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor={`name-${contact.id}`}>Full Name</Label>
+                      <Input id={`name-${contact.id}`} value={editing.fullName || ""} onChange={(e) => setEditing({ ...editing, fullName: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Contact Type</Label>
+                      <Select value={editing.contactType || "clinical"} onValueChange={(v) => setEditing({ ...editing, contactType: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CONTACT_TYPES.map(t => (
+                            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Title</Label>
+                      <Input value={editing.title || ""} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <Input type="email" value={editing.email || ""} onChange={(e) => setEditing({ ...editing, email: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Phone</Label>
+                      <Input value={editing.phoneDisplay || ""} onChange={(e) => handleEditPhone(e.target.value)} />
+                    </div>
                   </div>
-                )}
-                {contact.npiIndividual && (
-                  <div>
-                    <span className="text-[color:var(--muted)]">NPI:</span> {contact.npiIndividual}
+                  <div className="flex gap-2">
+                    <Button onClick={saveEdit}>Save</Button>
+                    <Button variant="outline" onClick={cancelEdit}>Cancel</Button>
                   </div>
-                )}
-                {contact.email && (
-                  <div>
-                    <span className="text-[color:var(--muted)]">Email:</span> {contact.email}
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="font-medium">{contact.fullName}</h4>
+                    <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
+                      {CONTACT_TYPES.find(t => t.value === contact.contactType)?.label}
+                    </span>
                   </div>
-                )}
-                {contact.phoneDisplay && (
-                  <div>
-                    <span className="text-[color:var(--muted)]">Phone:</span> {contact.phoneDisplay}
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    {contact.title && (
+                      <div>
+                        <span className="text-[color:var(--muted)]">Title:</span> {contact.title}
+                      </div>
+                    )}
+                    {contact.email && (
+                      <div>
+                        <span className="text-[color:var(--muted)]">Email:</span> {contact.email}
+                      </div>
+                    )}
+                    {contact.phoneDisplay && (
+                      <div>
+                        <span className="text-[color:var(--muted)]">Phone:</span> {contact.phoneDisplay}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDeleteContact(contact.id)}
-              className="text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-1">
+              {editingId === contact.id ? null : (
+                <Button variant="ghost" size="icon" onClick={() => startEdit(contact)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteContact(contact.id)}
+                className="text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ))}
       </CardContent>
