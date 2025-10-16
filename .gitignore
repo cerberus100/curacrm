@@ -40,3 +40,4 @@ prisma/migrations/
 .env.bak
 AWS_CREDENTIALS_READY.md
 td*.json
+*.json

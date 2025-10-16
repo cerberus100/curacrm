@@ -80,6 +80,11 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
             const data = await response.json();
             setAccount(data.account);
             setContacts(data.account.contacts || []);
+            // Load primary contact fields
+            setPrimaryContact({
+              name: data.account.primaryContactName || "",
+              position: data.account.primaryContactPosition || "",
+            });
           }
         } catch (error) {
           toast({
@@ -219,6 +224,11 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
       if (response.ok) {
         const data = await response.json();
         setAccount(data.account);
+        // Also update primary contact state after save
+        setPrimaryContact({
+          name: data.account.primaryContactName || "",
+          position: data.account.primaryContactPosition || "",
+        });
         toast({
           title: "Success",
           description: accountId ? "Account updated" : "Account created",
@@ -446,10 +456,17 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
               <Input
                 id="npiOrg"
                 value={account.npiOrg || ""}
-                onChange={(e) => setAccount({ ...account, npiOrg: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+                  if (value.length <= 10) {
+                    setAccount({ ...account, npiOrg: value });
+                  }
+                }}
                 onBlur={handleNPIBlur}
                 placeholder="1234567890"
                 maxLength={10}
+                pattern="[0-9]*"
+                inputMode="numeric"
               />
               {errors.npiOrg && (
                 <p className="text-sm text-destructive mt-1">{errors.npiOrg}</p>
@@ -478,9 +495,17 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
               <Input
                 id="phone"
                 value={account.phoneDisplay || ""}
-                onChange={(e) => handlePhoneChange(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Limit to reasonable length for formatted phone number
+                  if (value.length <= 14) { // (555) 123-4567
+                    handlePhoneChange(value);
+                  }
+                }}
                 onBlur={handlePhoneBlur}
                 placeholder="(555) 123-4567"
+                maxLength={14}
+                type="tel"
               />
             </div>
 
@@ -502,6 +527,13 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
                 type="url"
                 value={account.website || ""}
                 onChange={(e) => setAccount({ ...account, website: e.target.value })}
+                onBlur={(e) => {
+                  let value = e.target.value.trim();
+                  if (value && !value.match(/^https?:\/\//i)) {
+                    value = `https://${value}`;
+                  }
+                  setAccount({ ...account, website: value });
+                }}
                 placeholder="https://practice.com"
               />
             </div>
@@ -560,9 +592,16 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
               <Input
                 id="zip"
                 value={account.zip || ""}
-                onChange={(e) => setAccount({ ...account, zip: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+                  if (value.length <= 5) {
+                    setAccount({ ...account, zip: value });
+                  }
+                }}
                 placeholder="94102"
-                maxLength={10}
+                maxLength={5}
+                pattern="[0-9]*"
+                inputMode="numeric"
               />
             </div>
           </div>

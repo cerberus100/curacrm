@@ -9,7 +9,7 @@ const EIN_TIN_REGEX = /^\d{9}$/; // 9 digits, stored without dashes
 const PHONE_DISPLAY_REGEX = /^\(\d{3}\) \d{3}-\d{4}$/;
 const E164_REGEX = /^\+1\d{10}$/;
 const STATE_REGEX = /^[A-Z]{2}$/;
-const ZIP_REGEX = /^\d{5}(-\d{4})?$/;
+const ZIP_REGEX = /^\d{5}$/; // Simple 5-digit ZIP code
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // PHI patterns to reject (security)
@@ -162,6 +162,17 @@ export const AccountSchema = z.object({
   leadSource: z
     .string()
     .max(100)
+    .optional()
+    .nullable(),
+  
+  // Primary contact fields from form
+  primaryContactName: z
+    .string()
+    .optional()
+    .nullable(),
+    
+  primaryContactPosition: z
+    .string()
     .optional()
     .nullable(),
   
