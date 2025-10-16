@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireRecruiter } from "@/lib/auth-helpers";
+import { requireRecruiter } from "@/lib/auth";
 import { BulkRecruitCsvSchema } from "@/lib/validations";
 import { getEmailAdapter } from "@/lib/provisioning/emailAdapter";
 import { createCrmLogin } from "@/lib/provisioning/crmAdapter";

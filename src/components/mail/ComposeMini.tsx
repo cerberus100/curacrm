@@ -40,19 +40,19 @@ export default function ComposeMini({
     <div className="rounded-md border p-2 space-y-2">
       <div className="text-sm font-medium">Compose</div>
       <input
-        className="w-full rounded-md border px-2 py-1 text-sm"
+        className="w-full rounded-md border px-2 py-1 text-sm text-foreground bg-background"
         placeholder="To"
         value={to}
         onChange={(e) => setTo(e.target.value)}
       />
       <input
-        className="w-full rounded-md border px-2 py-1 text-sm"
+        className="w-full rounded-md border px-2 py-1 text-sm text-foreground bg-background"
         placeholder="Subject"
         value={subject}
         onChange={(e) => setSubject(e.target.value)}
       />
       <textarea
-        className="w-full rounded-md border px-2 py-1 text-sm h-28"
+        className="w-full rounded-md border px-2 py-1 text-sm h-28 text-foreground bg-background"
         placeholder="Message…"
         value={body}
         onChange={(e) => setBody(e.target.value)}

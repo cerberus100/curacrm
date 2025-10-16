@@ -28,6 +28,11 @@ export function LoginForm() {
       const data = await response.json();
 
       if (!response.ok) {
+        // If backend returns password reset requirement, route accordingly
+        if (data?.reason === "PASSWORD_RESET_REQUIRED") {
+          window.location.href = "/force-change-password";
+          return;
+        }
         throw new Error(data.error || "Login failed");
       }
 

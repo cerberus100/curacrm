@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { CuraGenesisUserAPI } from "@/lib/curagenesis-api";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { requireAdmin } from "@/lib/auth";
 
 // Prevent static generation of this route
 export const dynamic = 'force-dynamic';

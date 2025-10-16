@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { calculateSegmentMetrics } from "@/lib/metrics-calculator";
-import { getCurrentUser } from "@/lib/auth-helpers";
+import { getCurrentUser } from "@/lib/auth";
+export const dynamic = 'force-dynamic';
 
 const RequestSchema = z.object({
   dateRange: z.enum(["30d", "60d", "90d"]).default("30d"),

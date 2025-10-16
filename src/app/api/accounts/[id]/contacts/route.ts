@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ContactSchema } from "@/lib/validations";
 import { logActivity } from "@/lib/activity-logger";
-import { getCurrentUser } from "@/lib/auth-helpers";
+import { getCurrentUser } from "@/lib/auth";
 import { z } from "zod";
 
 /**

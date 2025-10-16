@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { calculateLeaderboardMetrics } from "@/lib/metrics-calculator";
-import { getCurrentUser } from "@/lib/auth-helpers";
+import { getCurrentUser } from "@/lib/auth";
 
 const RequestSchema = z.object({
   dateRange: z.enum(["30d", "60d", "90d"]).default("30d"),

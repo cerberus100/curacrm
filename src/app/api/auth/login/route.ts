@@ -60,6 +60,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Force change password UX: if flagged, instruct client to redirect
+    if (user.onboardStatus !== "ACTIVE" || (await prisma.user.findUnique({ where: { id: user.id }, select: { passwordResetRequired: true } }))?.passwordResetRequired) {
+      return NextResponse.json({ error: "Password reset required", reason: "PASSWORD_RESET_REQUIRED" }, { status: 403 });
+    }
+
     // Check if user is active
     if (!user.active) {
       return NextResponse.json(

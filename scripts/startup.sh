@@ -11,19 +11,33 @@ async function runMigrations() {
   try {
     console.log('Adding primary_contact_name column...');
     await prisma.\$executeRawUnsafe('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS primary_contact_name TEXT');
-    
+
     console.log('Adding primary_contact_position column...');
     await prisma.\$executeRawUnsafe('ALTER TABLE accounts ADD COLUMN IF NOT EXISTS primary_contact_position TEXT');
-    
+
     console.log('Creating Team enum type...');
     await prisma.\$executeRawUnsafe(\"CREATE TYPE \\\"Team\\\" AS ENUM ('IN_HOUSE', 'VANTAGE_POINT')\").catch(() => console.log('Team enum already exists'));
-    
+
     console.log('Adding team column to users...');
-    await prisma.\$executeRawUnsafe('ALTER TABLE users ADD COLUMN IF NOT EXISTS team \\\"Team\\\"');
-    
+    await prisma.\$executeRawUnsafe('ALTER TABLE users ADD COLUMN IF NOT EXISTS team \"Team\"');
+
     console.log('Creating team index...');
     await prisma.\$executeRawUnsafe('CREATE INDEX IF NOT EXISTS users_team_idx ON users(team) WHERE team IS NOT NULL');
-    
+
+    // New CRM user creation fields
+    console.log('Adding CRM user creation columns...');
+    await prisma.\$executeRawUnsafe('ALTER TABLE users ADD COLUMN IF NOT EXISTS workmail_user_id TEXT');
+    await prisma.\$executeRawUnsafe('ALTER TABLE users ADD COLUMN IF NOT EXISTS department TEXT');
+    await prisma.\$executeRawUnsafe('ALTER TABLE users ADD COLUMN IF NOT EXISTS manager_id TEXT');
+    await prisma.\$executeRawUnsafe('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN');
+    await prisma.\$executeRawUnsafe('UPDATE users SET is_active = CASE WHEN is_active IS NULL THEN true ELSE is_active END');
+
+    // Onboarding tokens table (if missing)
+    console.log('Ensuring onboarding_tokens table exists...');
+    await prisma.\$executeRawUnsafe('CREATE TABLE IF NOT EXISTS onboarding_tokens (id TEXT PRIMARY KEY, token TEXT UNIQUE, user_id TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL, used BOOLEAN DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())');
+    await prisma.\$executeRawUnsafe('CREATE INDEX IF NOT EXISTS onboarding_tokens_token_idx ON onboarding_tokens(token)');
+    await prisma.\$executeRawUnsafe('CREATE INDEX IF NOT EXISTS onboarding_tokens_user_idx ON onboarding_tokens(user_id)');
+
     console.log('✅ Schema updates complete');
   } catch (error) {
     console.log('⚠️  Schema update error:', error.message);
@@ -78,7 +92,7 @@ async function ensureAdmin() {
           active: true,
           onboardStatus: 'ACTIVE',
         }
-      }).catch((e) => {
+      }).catch(() => {
         console.log('⚠️  Password column not found - please run: ALTER TABLE users ADD COLUMN password VARCHAR(255);');
       });
     } else {
@@ -94,7 +108,7 @@ async function ensureAdmin() {
           onboardStatus: 'ACTIVE',
           onboardedAt: new Date(),
         }
-      }).catch(async (e) => {
+      }).catch(async () => {
         // If password column doesn't exist, create without it
         console.log('⚠️  Password column not found, creating user without password');
         await prisma.user.create({

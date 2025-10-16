@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { unlink } from "fs/promises";
 import { join } from "path";
 import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth-helpers";
+import { getCurrentUser } from "@/lib/auth";
 import { logActivity } from "@/lib/activity-logger";
 
 export const dynamic = "force-dynamic";

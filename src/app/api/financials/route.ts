@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { requireAdmin } from "@/lib/auth";
 import { CuraGenesisFinancialsAPI } from "@/lib/curagenesis-financials-api";
 import { z } from "zod";
 

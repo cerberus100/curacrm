@@ -5,12 +5,11 @@ export default function OpenMailboxButton({
 }: { 
   corpEmail?: string | null 
 }) {
-  const url = process.env.NEXT_PUBLIC_WORKMAIL_WEB_URL!;
   const title = corpEmail ? `Open ${corpEmail}` : "Open Mailbox";
   
   return (
     <a
-      href={url}
+      href="/api/mail/open"
       target="_blank"
       rel="noopener noreferrer"
       title={title}

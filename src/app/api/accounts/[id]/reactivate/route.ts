@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireRepOrAdmin } from "@/lib/auth-helpers";
+import { requireRepOrAdmin } from "@/lib/auth";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic';

@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth-helpers";
+import { requireAdmin } from "@/lib/auth";
 import { VendorDetailClient } from "./vendor-detail-client";
 
 export default async function VendorDetailPage() {

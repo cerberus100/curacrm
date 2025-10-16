@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth-helpers";
+import { requireAdmin } from "@/lib/auth";
 import { RepDetailClient } from "./rep-detail-client";
 
 export default async function RepDetailPage() {

@@ -1,8 +1,10 @@
 // GET /api/mail/list - List inbox/sent emails for a user
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getCurrentUser } from '@/lib/auth-helpers';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { getCurrentUser } from '@/lib/auth';
+
+export const dynamic = 'force-dynamic';
 
 const prisma = new PrismaClient();
 
@@ -44,28 +46,26 @@ export async function GET(request: NextRequest) {
     };
 
     // Get emails from database
-    const emails = await prisma.mailMessage.findMany({
-      where,
-      orderBy: {
-        receivedAt: 'desc',
-      },
-      skip: cursor ? parseInt(cursor) : 0,
-      take: limit,
-      select: {
-        id: true,
-        from: true,
-        to: true,
-        subject: true,
-        snippet: true,
-        receivedAt: true,
-        sentAt: true,
-        isRead: true,
-        isStarred: true,
-        folder: true,
-        hasAttachments: true,
-        attachmentCount: true,
-      },
-    });
+    // NOTE: Use raw SQL to avoid enum casting issues if the `folder` column is TEXT in DB
+    const offset = cursor ? parseInt(cursor) : 0;
+    const emails = await prisma.$queryRaw<any[]>(Prisma.sql`
+      SELECT id,
+             "from",
+             "to",
+             subject,
+             snippet,
+             received_at  AS "receivedAt",
+             sent_at      AS "sentAt",
+             is_read      AS "isRead",
+             is_starred   AS "isStarred",
+             folder,
+             has_attachments AS "hasAttachments",
+             attachment_count AS "attachmentCount"
+      FROM mail_messages
+      WHERE user_id = ${where.userId} AND folder = ${dbFolder}
+      ORDER BY received_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `);
 
     // Format response to match frontend expectations
     const items = emails.map(email => ({
@@ -93,10 +93,10 @@ export async function GET(request: NextRequest) {
       nextCursor,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching mail list:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error?.message || 'Internal server error' },
       { status: 500 }
     );
   } finally {
