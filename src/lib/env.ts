@@ -30,7 +30,7 @@ export const env = envSchema.parse({
   DATABASE_URL: process.env.DATABASE_URL || 'postgresql://build:build@localhost:5432/build',
   CURAGENESIS_API_BASE: process.env.CURAGENESIS_API_BASE || 'https://api.curagenesis.com',
   CURAGENESIS_API_KEY: process.env.CURAGENESIS_API_KEY || 'build-key',
-  CURAGENESIS_API_TIMEOUT_MS: process.env.CURAGENESIS_API_TIMEOUT_MS || '10000',
+  CURAGENESIS_API_TIMEOUT_MS: process.env.CURAGENESIS_API_TIMEOUT_MS || '60000',
   CURAGENESIS_VENDOR_TOKEN: process.env.CURAGENESIS_VENDOR_TOKEN || 'build-key',
   CG_METRICS_API_KEY: process.env.CG_METRICS_API_KEY || 'build-key',
   NODE_ENV: process.env.NODE_ENV,

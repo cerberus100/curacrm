@@ -85,8 +85,8 @@ model Account {
   status         AccountStatus @default(PENDING)
   leadSource     String?  @map("lead_source")
   ownerRepId     String?  @map("owner_rep_id")
-  // primaryContactName     String?  @map("primary_contact_name") // COMMENTED OUT - DB column doesn't exist yet
-  // primaryContactPosition String?  @map("primary_contact_position") // COMMENTED OUT - DB column doesn't exist yet
+  primaryContactName     String?  @map("primary_contact_name")
+  primaryContactPosition String?  @map("primary_contact_position")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
