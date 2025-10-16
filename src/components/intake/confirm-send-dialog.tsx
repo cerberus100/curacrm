@@ -29,9 +29,9 @@ export function ConfirmSendDialog({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Confirm Submission to CuraGenesis</DialogTitle>
+          <DialogTitle>Confirm Submission to Practice</DialogTitle>
           <DialogDescription>
-            Please review the details before sending this account.
+            Please review the details before sending this practice.
           </DialogDescription>
         </DialogHeader>
         
@@ -70,7 +70,7 @@ export function ConfirmSendDialog({
           </div>
 
           <div className="text-xs text-[color:var(--muted)]">
-            <p>• This will create or update the practice in CuraGenesis</p>
+            <p>• This will create or update the practice in the system</p>
             <p>• The submission will be tracked with an idempotency key</p>
             <p>• You can view the result in the Submissions page</p>
           </div>
@@ -81,7 +81,7 @@ export function ConfirmSendDialog({
             Cancel
           </Button>
           <Button onClick={onConfirm}>
-            Confirm & Send to CuraGenesis
+            Confirm & Send to Practice
           </Button>
         </DialogFooter>
       </DialogContent>

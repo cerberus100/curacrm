@@ -250,16 +250,7 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
     if (!account.id) {
       toast({
         title: "Save Required",
-        description: "Please save the account before sending to CuraGenesis",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (contacts.length === 0) {
-      toast({
-        title: "Contact Required",
-        description: "Please add at least one contact before sending",
+        description: "Please save the account before sending to Practice",
         variant: "destructive",
       });
       return;
@@ -293,7 +284,7 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
       if (response.ok) {
         toast({
           title: "✅ Success",
-          description: data.message || "Account sent to CuraGenesis",
+          description: data.message || "Practice sent",
         });
         onClose();
       } else {
@@ -354,7 +345,7 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
             disabled={isSending || !account.id}
           >
             <Send className="h-4 w-4 mr-2" />
-            {isSending ? "Sending..." : "Send to CuraGenesis"}
+            {isSending ? "Sending..." : "Send to Practice"}
           </Button>
         </div>
       </div>
