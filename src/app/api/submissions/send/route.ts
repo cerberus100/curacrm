@@ -37,13 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
-    // Validate account readiness
-    if (account.contacts.length === 0) {
-      return NextResponse.json(
-        { error: "Account must have at least one contact before sending" },
-        { status: 400 }
-      );
-    }
+    // Contacts are optional; proceed even if none exist
 
     // Build intake payload
     const payload = IntakePayloadSchema.parse({
