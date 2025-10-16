@@ -403,7 +403,7 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
                 value={account.specialty || ""}
                 onValueChange={(value) => setAccount({ ...account, specialty: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="specialty">
                   <SelectValue placeholder="Select specialty" />
                 </SelectTrigger>
                 <SelectContent>
@@ -425,7 +425,7 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
                 value={account.state || ""}
                 onValueChange={(value) => setAccount({ ...account, state: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="state">
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
                 <SelectContent>

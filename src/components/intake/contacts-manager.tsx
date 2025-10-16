@@ -221,7 +221,7 @@ export function ContactsManager({
                   value={newContact.contactType || "clinical"}
                   onValueChange={(value) => setNewContact({ ...newContact, contactType: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="contactType">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -273,7 +273,7 @@ export function ContactsManager({
                   value={newContact.preferredContactMethod || ""}
                   onValueChange={(value) => setNewContact({ ...newContact, preferredContactMethod: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="preferredContactMethod">
                     <SelectValue placeholder="Select preference" />
                   </SelectTrigger>
                   <SelectContent>
