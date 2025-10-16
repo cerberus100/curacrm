@@ -22,8 +22,8 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}Step 1: Building Docker Image...${NC}"
-docker build -t ${ECR_REPO}:${IMAGE_TAG} .
+echo -e "${BLUE}Step 1: Building Docker Image (linux/amd64)...${NC}"
+docker buildx build --platform linux/amd64 -t ${ECR_REPO}:${IMAGE_TAG} --load .
 
 echo -e "${GREEN}✓ Docker image built successfully${NC}"
 echo ""

@@ -192,9 +192,9 @@ export const ContactSchema = z.object({
     .max(255)
     .refine((val) => !containsPHI(val), "Full name contains prohibited PHI patterns"),
   
+  // NPI is no longer validated; allow optional free-text or omit entirely
   npiIndividual: z
     .string()
-    .refine((val) => !val || NPI_REGEX.test(val), "NPI must be exactly 10 digits")
     .optional()
     .nullable(),
   
@@ -235,6 +235,18 @@ export const ContactSchema = z.object({
 );
 
 export type ContactInput = z.infer<typeof ContactSchema>;
+
+// Partial schema for contact updates (all fields optional)
+export const ContactUpdateSchema = z.object({
+  contactType: ContactTypeEnum.optional(),
+  fullName: z.string().min(1).max(255).optional(),
+  npiIndividual: z.string().optional().nullable(),
+  title: z.string().max(100).optional().nullable(),
+  email: z.string().email("Invalid email format").optional().nullable(),
+  phoneDisplay: z.string().regex(PHONE_DISPLAY_REGEX, "Phone must be in format (XXX) XXX-XXXX").optional().nullable(),
+  phoneE164: z.string().regex(E164_REGEX, "Phone must be in E.164 format (+1XXXXXXXXXX)").optional().nullable(),
+  preferredContactMethod: z.enum(["email", "phone", "both"]).optional().nullable(),
+});
 
 // ============================================================================
 // INTAKE PAYLOAD SCHEMA (for CuraGenesis API)

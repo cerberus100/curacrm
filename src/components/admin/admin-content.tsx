@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Settings, UserPlus, Users, FileText, Building2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { SesStatusRow } from "./SesStatusRow";
 // import { TeamManager } from "./TeamManager"; // DISABLED - Team feature requires DB migration
 
 interface User {
@@ -347,10 +348,11 @@ export function AdminContent() {
               <span className="text-[color:var(--muted)]">CuraGenesis API</span>
               <span className="text-green-400 font-medium">Configured</span>
             </div>
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between py-2 border-b border-border">
               <span className="text-[color:var(--muted)]">Metrics API</span>
               <span className="text-green-400 font-medium">Configured</span>
             </div>
+            <SesStatusRow />
           </div>
         </CardContent>
       </Card>

@@ -1,7 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { ContactSchema } from "@/lib/validations";
+import { ContactUpdateSchema } from "@/lib/validations";
 import { z } from "zod";
+
+// Update contact
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const body = await request.json();
+  // Validate using ContactUpdateSchema (all fields optional)
+  const data = ContactUpdateSchema.parse(body);
+
+    const updated = await prisma.contact.update({
+      where: { id: params.id },
+      data: {
+        contactType: data.contactType,
+        fullName: data.fullName,
+        npiIndividual: data.npiIndividual ?? undefined,
+        title: data.title ?? undefined,
+        email: data.email ?? undefined,
+        phoneDisplay: data.phoneDisplay ?? undefined,
+        phoneE164: data.phoneE164 ?? undefined,
+        preferredContactMethod: data.preferredContactMethod ?? undefined,
+      },
+    });
+
+    return NextResponse.json({ contact: updated });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Validation failed", issues: error.errors }, { status: 400 });
+    }
+    console.error("PUT /api/contacts/:id error:", error);
+    return NextResponse.json({ error: "Failed to update contact" }, { status: 500 });
+  }
+}
+
+// Delete contact
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    await prisma.contact.delete({ where: { id: params.id } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("DELETE /api/contacts/:id error:", error);
+    return NextResponse.json({ error: "Failed to delete contact" }, { status: 500 });
+  }
+}
 
 /**
  * PATCH /api/contacts/:id
@@ -53,21 +95,4 @@ export async function PATCH(
  * DELETE /api/contacts/:id
  * Delete contact
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    await prisma.contact.delete({
-      where: { id: params.id },
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("DELETE /api/contacts/:id error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete contact" },
-      { status: 500 }
-    );
-  }
-}
+// Note: DELETE is defined above; keeping a single implementation
