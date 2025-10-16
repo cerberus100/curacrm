@@ -36,6 +36,9 @@ export interface BAADataItem {
   primaryContactEmail?: string;
   primaryContactPhone?: string;
   salesRep?: string; // repId
+  // Optional analytics fields (schema-less)
+  specialty?: string;
+  leadSource?: string;
   createdAt?: string;
   updatedAt?: string;
 }

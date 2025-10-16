@@ -498,38 +498,63 @@ export async function calculateSegmentMetrics(dateRange: DateRange, repEmail?: s
 
   const recentOrders = orders.filter(o => isWithinDateRange(o.createdAt, dateRange));
 
-  // Mock specialty data (would need specialty field in BAAData)
-  const specialties = ["Wound Care", "Orthopedics", "Podiatry", "Dermatology", "Other"];
-  const bySpecialty = specialties.map(specialty => {
-    // Distribute orders randomly for now
-    const segmentOrders = recentOrders.filter(() => Math.random() < 0.2);
-    const sales = segmentOrders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
-    const practices = new Set(segmentOrders.map(o => o.userId)).size;
-    
-    return {
-      segment: specialty,
-      orders: segmentOrders.length,
-      sales,
-      practices,
-      avgOrderValue: segmentOrders.length > 0 ? sales / segmentOrders.length : 0,
-    };
-  }).filter(s => s.orders > 0);
+  // Build quick lookup for facility by userId
+  const facilityByUserId = new Map<string, BAADataItem>();
+  facilities.forEach(f => {
+    facilityByUserId.set(f.UserId, f);
+  });
 
-  // Mock lead source data (would need leadSource field in BAAData)
-  const leadSources = ["Referral", "Conference", "Direct Outreach", "Partner"];
-  const byLeadSource = leadSources.map(source => {
-    const segmentOrders = recentOrders.filter(() => Math.random() < 0.25);
-    const sales = segmentOrders.reduce((sum, order) => sum + calculateOrderTotal(order), 0);
-    const practices = new Set(segmentOrders.map(o => o.userId)).size;
-    
-    return {
-      segment: source,
-      orders: segmentOrders.length,
-      sales,
-      practices,
-      avgOrderValue: segmentOrders.length > 0 ? sales / segmentOrders.length : 0,
-    };
-  }).filter(s => s.orders > 0);
+  // Group orders by specialty and lead source derived from facility metadata
+  type SegmentAgg = { sales: number; orders: number; practices: Set<string> };
+  const specialtyAgg = new Map<string, SegmentAgg>();
+  const leadSourceAgg = new Map<string, SegmentAgg>();
+
+  recentOrders.forEach(order => {
+    const facility = facilityByUserId.get(order.userId);
+    const specialty = (facility?.specialty?.trim() || "Unspecified");
+    const leadSource = (facility?.leadSource?.trim() || "Unspecified");
+    const orderTotal = calculateOrderTotal(order);
+
+    // Specialty
+    if (!specialtyAgg.has(specialty)) {
+      specialtyAgg.set(specialty, { sales: 0, orders: 0, practices: new Set() });
+    }
+    const sAgg = specialtyAgg.get(specialty)!;
+    sAgg.sales += orderTotal;
+    sAgg.orders += 1;
+    sAgg.practices.add(order.userId);
+
+    // Lead Source
+    if (!leadSourceAgg.has(leadSource)) {
+      leadSourceAgg.set(leadSource, { sales: 0, orders: 0, practices: new Set() });
+    }
+    const lAgg = leadSourceAgg.get(leadSource)!;
+    lAgg.sales += orderTotal;
+    lAgg.orders += 1;
+    lAgg.practices.add(order.userId);
+  });
+
+  const bySpecialty = Array.from(specialtyAgg.entries())
+    .map(([segment, agg]) => ({
+      segment,
+      orders: agg.orders,
+      sales: agg.sales,
+      practices: agg.practices.size,
+      avgOrderValue: agg.orders > 0 ? agg.sales / agg.orders : 0,
+    }))
+    .sort((a, b) => b.sales - a.sales)
+    .slice(0, 12); // cap to top 12
+
+  const byLeadSource = Array.from(leadSourceAgg.entries())
+    .map(([segment, agg]) => ({
+      segment,
+      orders: agg.orders,
+      sales: agg.sales,
+      practices: agg.practices.size,
+      avgOrderValue: agg.orders > 0 ? agg.sales / agg.orders : 0,
+    }))
+    .sort((a, b) => b.sales - a.sales)
+    .slice(0, 12);
 
   return { bySpecialty, byLeadSource };
 }
