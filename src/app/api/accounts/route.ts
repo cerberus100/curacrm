@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const { getCurrentUser } = await import("@/lib/auth-helpers");
+    const { getCurrentUser } = await import("@/lib/auth");
     const user = await getCurrentUser();
     
     if (!user) {
