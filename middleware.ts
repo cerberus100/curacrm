@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { jwtVerify } from 'jose';
 
 export async function middleware(request: NextRequest) {
-  const token = await getToken({ 
-    req: request, 
-    secret: process.env.NEXTAUTH_SECRET 
-  });
-
   const { pathname } = request.nextUrl;
+
+  // Get auth token from cookies
+  const authToken = request.cookies.get('auth-token')?.value;
+  
+  let userRole: string | null = null;
+  
+  if (authToken) {
+    try {
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+      const { payload } = await jwtVerify(authToken, secret);
+      userRole = payload.role as string;
+    } catch (error) {
+      // Invalid token, userRole remains null
+    }
+  }
 
   // Admin-only routes
   if (pathname.startsWith('/admin') || pathname.startsWith('/vendors')) {
-    if (!token || token.role !== 'ADMIN') {
+    if (!userRole || userRole !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Access Denied', message: 'Admin access required' },
         { status: 403 }
@@ -21,7 +31,7 @@ export async function middleware(request: NextRequest) {
 
   // Recruiter/Admin routes
   if (pathname.startsWith('/recruit')) {
-    if (!token || !['ADMIN', 'RECRUITER'].includes(token.role as string)) {
+    if (!userRole || !['ADMIN', 'RECRUITER'].includes(userRole)) {
       return NextResponse.json(
         { error: 'Access Denied', message: 'Recruiter or Admin access required' },
         { status: 403 }
@@ -31,7 +41,7 @@ export async function middleware(request: NextRequest) {
 
   // API routes that need authentication
   if (pathname.startsWith('/api/admin') || pathname.startsWith('/api/vendors')) {
-    if (!token || token.role !== 'ADMIN') {
+    if (!userRole || userRole !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Access Denied', message: 'Admin access required' },
         { status: 403 }
@@ -40,7 +50,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api/recruiter')) {
-    if (!token || !['ADMIN', 'RECRUITER'].includes(token.role as string)) {
+    if (!userRole || !['ADMIN', 'RECRUITER'].includes(userRole)) {
       return NextResponse.json(
         { error: 'Access Denied', message: 'Recruiter or Admin access required' },
         { status: 403 }
