@@ -216,9 +216,7 @@ function OnboardingContent() {
             </Button>
           </div>
 
-          <div className="text-center text-xs text-[color:var(--muted)]">
-            Need help? Contact your administrator
-          </div>
+          
         </CardContent>
       </Card>
     </div>
