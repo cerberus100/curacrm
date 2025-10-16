@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
+import jwt from 'jsonwebtoken';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -11,9 +11,9 @@ export async function middleware(request: NextRequest) {
   
   if (authToken) {
     try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
-      const { payload } = await jwtVerify(authToken, secret);
-      userRole = payload.role as string;
+      const secret = process.env.JWT_SECRET || 'fallback-secret';
+      const decoded = jwt.verify(authToken, secret) as any;
+      userRole = decoded.role;
     } catch (error) {
       // Invalid token, userRole remains null
     }
