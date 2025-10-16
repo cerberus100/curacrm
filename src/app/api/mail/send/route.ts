@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
-import { getCurrentUser } from '@/lib/auth-helpers';
+import { getCurrentUser } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
