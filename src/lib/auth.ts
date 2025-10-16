@@ -118,6 +118,20 @@ export async function requireRepOrAdmin(): Promise<CurrentUser> {
 }
 
 /**
+ * Require that the user is a recruiter
+ * Throws 403 if not recruiter
+ */
+export async function requireRecruiter(): Promise<CurrentUser> {
+  const user = await requireAuth();
+
+  if (user.role !== "RECRUITER" && user.role !== "ADMIN") {
+    throw new Error("Forbidden: Recruiter access required");
+  }
+
+  return user;
+}
+
+/**
  * Check if user has completed onboarding
  */
 export function hasCompletedOnboarding(user: CurrentUser): boolean {
