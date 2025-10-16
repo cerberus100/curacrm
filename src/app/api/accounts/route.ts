@@ -159,8 +159,8 @@ export async function POST(request: NextRequest) {
         city: validatedData.city,
         zip: validatedData.zip,
         leadSource: validatedData.leadSource,
-        // primaryContactName: (validatedData as any).primaryContactName, // DB column doesn't exist yet
-        // primaryContactPosition: (validatedData as any).primaryContactPosition, // DB column doesn't exist yet
+        primaryContactName: (validatedData as any).primaryContactName,
+        primaryContactPosition: (validatedData as any).primaryContactPosition,
         status: "PENDING",
         ownerRepId: validatedData.ownerRepId,
       },

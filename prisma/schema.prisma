@@ -57,6 +57,9 @@ model User {
   
   // Email Integration
   mailMessages        MailMessage[]
+  
+  // Provisioning Jobs
+  provisionJobs       ProvisionJob[]
 
   @@map("users")
 }
@@ -85,8 +88,8 @@ model Account {
   status         AccountStatus @default(PENDING)
   leadSource     String?  @map("lead_source")
   ownerRepId     String?  @map("owner_rep_id")
-  // primaryContactName     String?  @map("primary_contact_name") // COMMENTED OUT - DB column doesn't exist yet, user doesn't have permissions to create
-  // primaryContactPosition String?  @map("primary_contact_position") // COMMENTED OUT - DB column doesn't exist yet, user doesn't have permissions to create
+  primaryContactName     String?  @map("primary_contact_name")
+  primaryContactPosition String?  @map("primary_contact_position")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -215,6 +218,31 @@ model Product {
   orderItems OrderItem[]
 
   @@map("products")
+}
+
+// Provisioning Jobs for WorkMail + CRM login creation
+model ProvisionJob {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  documentId String? @map("document_id")
+  status    ProvisionStatus @default(PENDING)
+  type      String   // USER_PROVISIONING, EMAIL_CREATION, etc.
+  metadata  Json?    // Additional job data
+  error     String?  // Error message if failed
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  completedAt DateTime? @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("provision_jobs")
+}
+
+enum ProvisionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
 }
 
 // Rep Profile for metrics

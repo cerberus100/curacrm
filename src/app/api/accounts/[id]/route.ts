@@ -78,8 +78,8 @@ export async function PATCH(
       where: { id: params.id },
       data: {
         ...validatedData,
-        // primaryContactName: (validatedData as any).primaryContactName, // DB column doesn't exist yet
-        // primaryContactPosition: (validatedData as any).primaryContactPosition, // DB column doesn't exist yet
+        primaryContactName: (validatedData as any).primaryContactName,
+        primaryContactPosition: (validatedData as any).primaryContactPosition,
       },
       include: {
         ownerRep: {

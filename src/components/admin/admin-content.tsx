@@ -374,11 +374,7 @@ export function AdminContent() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-green-400">✓</span>
-              <span>CURAGENESIS_API_KEY</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-green-400">✓</span>
-              <span>CG_METRICS_API_KEY</span>
+              <span>API Keys Configured</span>
             </div>
           </div>
         </CardContent>

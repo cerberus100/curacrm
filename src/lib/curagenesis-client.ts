@@ -221,6 +221,7 @@ export class CuraGenesisClient {
       const headers: HeadersInit = {
         "Content-Type": "application/json",
         "x-vendor-token": this.vendorToken,
+        "Authorization": `Bearer ${this.apiKey}`,
       };
 
       if (options.idempotencyKey) {

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { CuraGenesisClient } from "@/lib/curagenesis-client";
 import { IntakePayloadSchema, SubmissionCreateSchema } from "@/lib/validations";
 import { logActivity } from "@/lib/activity-logger";
+import { withRateLimit, rateLimiters } from "@/lib/security/rate-limit";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 
@@ -12,6 +13,21 @@ import { randomUUID } from "crypto";
  */
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitError = withRateLimit(rateLimiters.strict)(request);
+    if (rateLimitError) {
+      return NextResponse.json(
+        { error: rateLimitError.error },
+        { 
+          status: rateLimitError.status,
+          headers: {
+            'X-RateLimit-Remaining': rateLimitError.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitError.resetTime.toString(),
+          }
+        }
+      );
+    }
+
     const body = await request.json();
     
     // Validate input
