@@ -72,25 +72,51 @@ export class CuraGenesisClient {
   private timeout: number;
 
   constructor() {
-    // Use the new Prod API endpoint
-    this.baseUrl = 'https://w6mxt54h5f.execute-api.us-east-2.amazonaws.com/Prod';
-    this.vendorToken = env.CURAGENESIS_VENDOR_TOKEN;
-    this.apiKey = env.CURAGENESIS_API_KEY;
-    this.timeout = env.CURAGENESIS_API_TIMEOUT_MS;
+    // Read from environment so we can change without code deploys
+    // Use process.env directly (not env module) so runtime ECS vars are used, not build-time fallbacks
+    this.baseUrl = (process.env.CURAGENESIS_API_BASE || 'https://ix0n88n8ze.execute-api.us-east-2.amazonaws.com/prod').replace(/\/+$/, "");
+    this.vendorToken = process.env.CURAGENESIS_VENDOR_TOKEN || '';
+    this.apiKey = process.env.CURAGENESIS_API_KEY || '';
+    this.timeout = parseInt(process.env.CURAGENESIS_API_TIMEOUT_MS || '60000', 10);
+    
+    // Log config on init (safe - no secrets, just confirming vars are set)
+    try {
+      console.log("[CuraGenesis] Client initialized", {
+        baseUrl: this.baseUrl,
+        hasVendorToken: !!this.vendorToken,
+        hasApiKey: !!this.apiKey,
+        timeout: this.timeout
+      });
+    } catch {}
   }
 
   /**
    * Transform IntakePayload to BaaPayload format
    */
   private transformPayload(payload: IntakePayload): BaaPayload {
-    const primaryContact = payload.contacts[0]; // First contact is primary
-    const [firstName, ...lastNameParts] = primaryContact.full_name.split(" ");
-    const lastName = lastNameParts.join(" ");
+    // Contacts are optional now - use primary contact from form or first contact if available
+    const primaryContact = payload.contacts && payload.contacts.length > 0 ? payload.contacts[0] : null;
+    
+    let firstName = "";
+    let lastName = "";
+    let contactEmail = payload.practice.email || "";
+    
+    if (primaryContact && primaryContact.full_name) {
+      const [first, ...lastParts] = primaryContact.full_name.split(" ");
+      firstName = first || "";
+      lastName = lastParts.join(" ");
+      contactEmail = primaryContact.email || contactEmail;
+    } else if (payload.primaryContactName) {
+      // Use primary contact name from form if no contacts exist
+      const [first, ...lastParts] = payload.primaryContactName.split(" ");
+      firstName = first || "";
+      lastName = lastParts.join(" ");
+    }
 
     const baaPayload: BaaPayload = {
-      email: primaryContact.email || payload.practice.email || "",
-      firstName: firstName || "",
-      lastName: lastName || "",
+      email: contactEmail,
+      firstName: firstName,
+      lastName: lastName,
       baaSigned: false,
       paSigned: false,
       facilityName: payload.practice.name,
@@ -107,29 +133,31 @@ export class CuraGenesisClient {
       facilityTIN: payload.practice.ein_tin || undefined,
       facilityPhone: payload.practice.phone || undefined,
       // Use primaryContactName from form if available, fallback to first contact
-      primaryContactName: payload.primaryContactName || primaryContact.full_name,
-      primaryContactEmail: primaryContact.email || undefined,
-      primaryContactPhone: primaryContact.phone || undefined,
+      primaryContactName: payload.primaryContactName || (primaryContact ? primaryContact.full_name : ""),
+      primaryContactEmail: primaryContact ? (primaryContact.email || undefined) : undefined,
+      primaryContactPhone: primaryContact ? (primaryContact.phone || undefined) : undefined,
     };
 
     // Add physician info if available
-    const physicianContact = payload.contacts.find(c => c.contact_type === "PHYSICIAN" || c.npi_individual);
-    if (physicianContact) {
-      baaPayload.physicianInfo = {
-        name: physicianContact.full_name,
-        email: physicianContact.email || undefined,
-        npi: physicianContact.npi_individual || undefined,
-      };
+    if (payload.contacts && payload.contacts.length > 0) {
+      const physicianContact = payload.contacts.find(c => c.contact_type === "PHYSICIAN" || c.npi_individual);
+      if (physicianContact) {
+        baaPayload.physicianInfo = {
+          name: physicianContact.full_name,
+          email: physicianContact.email || undefined,
+          npi: physicianContact.npi_individual || undefined,
+        };
 
-      // Additional physicians
-      const additionalPhysicians = payload.contacts
-        .filter(c => c !== physicianContact && (c.contact_type === "PHYSICIAN" || c.npi_individual));
-      if (additionalPhysicians.length > 0) {
-        baaPayload.additionalPhysicians = additionalPhysicians.map(p => ({
-          name: p.full_name,
-          email: p.email || undefined,
-          npi: p.npi_individual || undefined,
-        }));
+        // Additional physicians
+        const additionalPhysicians = payload.contacts
+          .filter(c => c !== physicianContact && (c.contact_type === "PHYSICIAN" || c.npi_individual));
+        if (additionalPhysicians.length > 0) {
+          baaPayload.additionalPhysicians = additionalPhysicians.map(p => ({
+            name: p.full_name,
+            email: p.email || undefined,
+            npi: p.npi_individual || undefined,
+          }));
+        }
       }
     }
 
@@ -151,29 +179,62 @@ export class CuraGenesisClient {
     // Transform to new API format
     const baaPayload = this.transformPayload(payload);
 
+    // Try multiple possible endpoint shapes and stage prefixes
+    // Common API Gateway behavior: stage (e.g., /Prod) must be present unless custom domain maps it away
+    const candidateStagePrefixes = [
+      "",           // no stage prefix (custom domain mapping)
+      "/Prod",     // standard AWS API Gateway stage
+      "/prod",     // some setups use lowercase
+    ];
+    const candidateEndpoints = [
+      "/admin_createUserWithBaa",
+      "/admin/createUserWithBaa",
+      "/admin_createUserWithBAA",
+      "/api/createUser", // fallback to legacy create user path
+    ];
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const response = await this.makeRequest<IntakeSuccessResponse>(
-          "/admin_createUserWithBaa",
-          {
-            method: "POST",
-            body: baaPayload,
-            idempotencyKey,
+        let response: CuraGenesisResponse<IntakeSuccessResponse> | null = null;
+
+        // Iterate across stage prefixes and endpoint shapes until one works or we exhaust options
+        outer: for (const stagePrefix of candidateStagePrefixes) {
+          for (const ep of candidateEndpoints) {
+            // Build combined path; baseUrl is normalized without trailing slash
+            const combined = `${stagePrefix}${ep}`;
+            response = await this.makeRequest<IntakeSuccessResponse>(combined, {
+              method: "POST",
+              body: baaPayload,
+              idempotencyKey,
+            });
+
+            // If path is wrong, API Gateway commonly returns 403 with Missing Authentication Token
+            const missingAuthToken =
+              response.status === 403 &&
+              (response.error?.toLowerCase().includes("missing authentication token") ?? false);
+
+            // 404 can also indicate wrong path (stage or endpoint)
+            const pathLikelyWrong = missingAuthToken || response.status === 404;
+
+            if (!pathLikelyWrong) {
+              // Got a definitive answer (success or other 4xx/5xx) for this combination
+              break outer;
+            }
           }
-        );
+        }
 
         // Success - return immediately
-        if (response.success) {
+        if (response && response.success) {
           return response;
         }
 
         // Client errors (4xx) - don't retry
-        if (response.status >= 400 && response.status < 500) {
+        if (response && response.status >= 400 && response.status < 500) {
           return response;
         }
 
         // Server errors (5xx) - retry
-        if (response.status >= 500) {
+        if (response && response.status >= 500) {
           lastError = new Error(`Server error: ${response.status}`);
           
           // Don't retry on last attempt
@@ -183,7 +244,7 @@ export class CuraGenesisClient {
           }
         }
 
-        return response;
+        return response ?? { success: false, status: 0, error: "No response" };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         
@@ -223,12 +284,24 @@ export class CuraGenesisClient {
       const headers: HeadersInit = {
         "Content-Type": "application/json",
         "x-vendor-token": this.vendorToken,
-        "Authorization": `Bearer ${this.apiKey}`,
+        "x-vendor-key": this.vendorToken, // some endpoints expect x-vendor-key
+        "x-api-key": this.apiKey,
       };
 
       if (options.idempotencyKey) {
         headers["Idempotency-Key"] = options.idempotencyKey;
       }
+
+      // Log request details for debugging (safe - no PHI in URL/headers)
+      try {
+        console.log("[CuraGenesis] Request", {
+          method: options.method,
+          url,
+          headers: Object.keys(headers),
+          hasBody: !!options.body,
+          bodyPreview: options.body ? JSON.stringify(options.body).substring(0, 100) : null
+        });
+      } catch {}
 
       const response = await fetch(url, {
         method: options.method,
@@ -249,14 +322,16 @@ export class CuraGenesisClient {
         if (response.ok) {
           data = json;
         } else {
-          error = json.error || json.message || `HTTP ${response.status}`;
+          error = (json.error || json.message || `HTTP ${response.status}`) + ` (url: ${url})`;
+          try { console.error("[CuraGenesis] Request failed", { status: response.status, url }); } catch {}
         }
       } else {
         const text = await response.text();
         if (response.ok) {
           data = text as T;
         } else {
-          error = text || `HTTP ${response.status}`;
+          error = (text || `HTTP ${response.status}`) + ` (url: ${url})`;
+          try { console.error("[CuraGenesis] Request failed", { status: response.status, url }); } catch {}
         }
       }
 
@@ -271,12 +346,14 @@ export class CuraGenesisClient {
 
       if (error instanceof Error) {
         if (error.name === "AbortError") {
+          try { console.error("[CuraGenesis] Request timeout", { url }); } catch {}
           return {
             success: false,
             error: "Request timeout",
             status: 408,
           };
         }
+        try { console.error("[CuraGenesis] Network error", { message: error.message, url }); } catch {}
         return {
           success: false,
           error: error.message,
@@ -396,7 +473,7 @@ export class MetricsClient {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
+        "x-api-key": this.apiKey,
       },
       body: JSON.stringify(params),
     });

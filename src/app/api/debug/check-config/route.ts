@@ -22,6 +22,10 @@ export async function GET(request: NextRequest) {
       // Show first/last few chars of token for verification (if exists)
       vendorTokenPreview: process.env.CURAGENESIS_VENDOR_TOKEN 
         ? `${process.env.CURAGENESIS_VENDOR_TOKEN.substring(0, 4)}...${process.env.CURAGENESIS_VENDOR_TOKEN.slice(-4)}`
+        : 'NOT SET',
+      apiBase: process.env.CURAGENESIS_API_BASE || 'NOT SET',
+      apiKeyPreview: process.env.CURAGENESIS_API_KEY
+        ? `${process.env.CURAGENESIS_API_KEY.substring(0, 4)}...${process.env.CURAGENESIS_API_KEY.slice(-4)}`
         : 'NOT SET'
     };
 

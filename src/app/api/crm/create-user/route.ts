@@ -5,8 +5,11 @@ import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
 const prisma = new PrismaClient();
 
-const workmailClient = new WorkMailClient({ region: process.env.AWS_REGION || 'us-east-1' });
-const sesClient = new SESClient({ region: process.env.AWS_REGION || 'us-east-1' });
+// Allow separate regions for WorkMail and SES; fall back to AWS_REGION
+const workmailRegion = process.env.AWS_REGION_WORKMAIL || process.env.AWS_REGION || 'us-east-1';
+const sesRegion = process.env.AWS_REGION_SES || process.env.AWS_REGION || 'us-east-1';
+const workmailClient = new WorkMailClient({ region: workmailRegion });
+const sesClient = new SESClient({ region: sesRegion });
 const WORKMAIL_ORG_ID = process.env.WORKMAIL_ORG_ID || '';
 
 export async function POST(request: NextRequest) {

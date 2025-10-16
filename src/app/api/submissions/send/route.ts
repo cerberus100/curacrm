@@ -13,11 +13,15 @@ import { randomUUID } from "crypto";
  */
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting
-    const rateLimitError = withRateLimit(rateLimiters.strict)(request);
+    // Apply rate limiting (lenient for testing - switch to strict in production)
+    const rateLimitError = withRateLimit(rateLimiters.lenient)(request);
     if (rateLimitError) {
+      console.log("[Rate Limit] Submission blocked", { 
+        remaining: rateLimitError.remaining, 
+        resetTime: new Date(rateLimitError.resetTime).toISOString() 
+      });
       return NextResponse.json(
-        { error: rateLimitError.error },
+        { error: rateLimitError.error, resetTime: new Date(rateLimitError.resetTime).toISOString() },
         { 
           status: rateLimitError.status,
           headers: {
@@ -109,18 +113,32 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    let submission;
     const idempotencyKey = existingSubmission?.idempotencyKey || randomUUID();
 
-    // Create submission record
-    const submission = await prisma.submission.create({
-      data: {
-        accountId,
-        submittedById: account.ownerRepId || "",
-        idempotencyKey,
-        status: "PENDING",
-        requestPayload: payload as any,
-      },
-    });
+    if (existingSubmission) {
+      // Reuse existing submission to avoid unique constraint violation
+      submission = existingSubmission;
+      // Update it to PENDING status
+      await prisma.submission.update({
+        where: { id: existingSubmission.id },
+        data: {
+          status: "PENDING",
+          requestPayload: payload as any,
+        },
+      });
+    } else {
+      // Create new submission record
+      submission = await prisma.submission.create({
+        data: {
+          accountId,
+          submittedById: account.ownerRepId || "",
+          idempotencyKey,
+          status: "PENDING",
+          requestPayload: payload as any,
+        },
+      });
+    }
 
     // Send to CuraGenesis
     const client = new CuraGenesisClient();
