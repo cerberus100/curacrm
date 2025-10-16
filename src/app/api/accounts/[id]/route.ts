@@ -76,7 +76,11 @@ export async function PATCH(
     // Update account
     const account = await prisma.account.update({
       where: { id: params.id },
-      data: validatedData,
+      data: {
+        ...validatedData,
+        primaryContactName: (validatedData as any).primaryContactName,
+        primaryContactPosition: (validatedData as any).primaryContactPosition,
+      },
       include: {
         ownerRep: {
           select: {
