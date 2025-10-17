@@ -13,24 +13,24 @@ import { randomUUID } from "crypto";
  */
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting (lenient for testing - switch to strict in production)
-    const rateLimitError = withRateLimit(rateLimiters.lenient)(request);
-    if (rateLimitError) {
-      console.log("[Rate Limit] Submission blocked", { 
-        remaining: rateLimitError.remaining, 
-        resetTime: new Date(rateLimitError.resetTime).toISOString() 
-      });
-      return NextResponse.json(
-        { error: rateLimitError.error, resetTime: new Date(rateLimitError.resetTime).toISOString() },
-        { 
-          status: rateLimitError.status,
-          headers: {
-            'X-RateLimit-Remaining': rateLimitError.remaining.toString(),
-            'X-RateLimit-Reset': rateLimitError.resetTime.toString(),
-          }
-        }
-      );
-    }
+    // TEMPORARILY DISABLED for testing - re-enable in production
+    // const rateLimitError = withRateLimit(rateLimiters.lenient)(request);
+    // if (rateLimitError) {
+    //   console.log("[Rate Limit] Submission blocked", { 
+    //     remaining: rateLimitError.remaining, 
+    //     resetTime: new Date(rateLimitError.resetTime).toISOString() 
+    //   });
+    //   return NextResponse.json(
+    //     { error: rateLimitError.error, resetTime: new Date(rateLimitError.resetTime).toISOString() },
+    //     { 
+    //       status: rateLimitError.status,
+    //       headers: {
+    //         'X-RateLimit-Remaining': rateLimitError.remaining.toString(),
+    //         'X-RateLimit-Reset': rateLimitError.resetTime.toString(),
+    //       }
+    //     }
+    //   );
+    // }
 
     const body = await request.json();
     

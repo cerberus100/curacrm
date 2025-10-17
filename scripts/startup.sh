@@ -24,6 +24,20 @@ async function runMigrations() {
     console.log('Creating team index...');
     await prisma.\$executeRawUnsafe('CREATE INDEX IF NOT EXISTS users_team_idx ON users(team) WHERE team IS NOT NULL');
 
+    // Rep profiles table
+    console.log('Creating rep_profiles table...');
+    await prisma.\$executeRawUnsafe(\`
+      CREATE TABLE IF NOT EXISTS rep_profiles (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+        user_id TEXT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        total_accounts_count INT DEFAULT 0,
+        active_accounts_count INT DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    \`);
+    await prisma.\$executeRawUnsafe('CREATE INDEX IF NOT EXISTS rep_profiles_user_id_idx ON rep_profiles(user_id)');
+
     // New CRM user creation fields
     console.log('Adding CRM user creation columns...');
     await prisma.\$executeRawUnsafe('ALTER TABLE users ADD COLUMN IF NOT EXISTS workmail_user_id TEXT');
@@ -138,6 +152,29 @@ ensureAdmin();
 " || echo "⚠️  Admin user creation skipped"
 
 echo "✅ Initialization complete!"
+
+# Create activity_log table if it doesn't exist
+echo "Creating activity_log table if it doesn't exist..."
+psql "$DATABASE_URL" <<EOF 2>/dev/null || true
+CREATE TABLE IF NOT EXISTS activity_log (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  action VARCHAR(255) NOT NULL,
+  "entityType" VARCHAR(255),
+  entity_id VARCHAR(255),
+  entity_name VARCHAR(255),
+  details TEXT,
+  metadata JSONB,
+  ip_address VARCHAR(45),
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_log_user_id ON activity_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_log_created_at ON activity_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_activity_log_action ON activity_log(action);
+CREATE INDEX IF NOT EXISTS idx_activity_log_entity ON activity_log("entityType", entity_id);
+EOF
 
 # Start the Next.js application using the standalone server
 echo "🌐 Starting Next.js server..."

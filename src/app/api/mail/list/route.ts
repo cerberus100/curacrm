@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const folder = searchParams.get('folder') || 'inbox';
     const cursor = searchParams.get('cursor');
+    const showAll = searchParams.get('showAll') === 'true'; // Admin-only: view all mail
     const limit = 10;
 
     // Validate folder
@@ -39,33 +40,43 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build query
+    // Build query - admins can view all mail if showAll=true
     const where: any = {
-      userId: user.id,
       folder: dbFolder,
     };
+    
+    // Non-admins or admins not requesting showAll see only their own mail
+    if (user.role !== 'ADMIN' || !showAll) {
+      where.userId = user.id;
+    }
 
     // Get emails from database
     // NOTE: Use raw SQL to avoid enum casting issues if the `folder` column is TEXT in DB
     const offset = cursor ? parseInt(cursor) : 0;
-    const emails = await prisma.$queryRaw<any[]>(Prisma.sql`
-      SELECT id,
-             "from",
-             "to",
-             subject,
-             snippet,
-             received_at  AS "receivedAt",
-             sent_at      AS "sentAt",
-             is_read      AS "isRead",
-             is_starred   AS "isStarred",
-             folder,
-             has_attachments AS "hasAttachments",
-             attachment_count AS "attachmentCount"
-      FROM mail_messages
-      WHERE user_id = ${where.userId} AND folder = ${dbFolder}
-      ORDER BY received_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `);
+    // Build SQL with optional user filter
+    const emails = await prisma.$queryRaw<any[]>(
+      where.userId
+        ? Prisma.sql`
+            SELECT id, user_id AS "userId", "from", "to", subject, snippet,
+                   received_at AS "receivedAt", sent_at AS "sentAt",
+                   is_read AS "isRead", is_starred AS "isStarred", folder,
+                   has_attachments AS "hasAttachments", attachment_count AS "attachmentCount"
+            FROM mail_messages
+            WHERE user_id = ${where.userId} AND folder = ${dbFolder}
+            ORDER BY received_at DESC
+            LIMIT ${limit} OFFSET ${offset}
+          `
+        : Prisma.sql`
+            SELECT id, user_id AS "userId", "from", "to", subject, snippet,
+                   received_at AS "receivedAt", sent_at AS "sentAt",
+                   is_read AS "isRead", is_starred AS "isStarred", folder,
+                   has_attachments AS "hasAttachments", attachment_count AS "attachmentCount"
+            FROM mail_messages
+            WHERE folder = ${dbFolder}
+            ORDER BY received_at DESC
+            LIMIT ${limit} OFFSET ${offset}
+          `
+    );
 
     // Format response to match frontend expectations
     const items = emails.map(email => ({

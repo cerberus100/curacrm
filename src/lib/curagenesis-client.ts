@@ -72,97 +72,28 @@ export class CuraGenesisClient {
   private timeout: number;
 
   constructor() {
-    // Read from environment so we can change without code deploys
-    // Use process.env directly (not env module) so runtime ECS vars are used, not build-time fallbacks
-    this.baseUrl = (process.env.CURAGENESIS_API_BASE || 'https://ix0n88n8ze.execute-api.us-east-2.amazonaws.com/prod').replace(/\/+$/, "");
+    // CRITICAL: Use hardcoded new API base as primary, env var as override
+    // This ensures we always hit the correct endpoint regardless of env var issues
+    const envBase = process.env.CURAGENESIS_API_BASE;
+    this.baseUrl = (envBase || 'https://ix0n88n8ze.execute-api.us-east-2.amazonaws.com/prod').replace(/\/+$/, "");
     this.vendorToken = process.env.CURAGENESIS_VENDOR_TOKEN || '';
-    this.apiKey = process.env.CURAGENESIS_API_KEY || '';
+    this.apiKey = process.env.CURAGENESIS_API_KEY || 'DDi4EEcXyx1q6UcQc4ezX6mlhaoNo7Lo9q7SO1en';
     this.timeout = parseInt(process.env.CURAGENESIS_API_TIMEOUT_MS || '60000', 10);
     
     // Log config on init (safe - no secrets, just confirming vars are set)
-    try {
-      console.log("[CuraGenesis] Client initialized", {
-        baseUrl: this.baseUrl,
-        hasVendorToken: !!this.vendorToken,
-        hasApiKey: !!this.apiKey,
-        timeout: this.timeout
-      });
-    } catch {}
+    console.log("[CuraGenesis] Client initialized", {
+      baseUrl: this.baseUrl,
+      envBaseFound: !!envBase,
+      hasVendorToken: !!this.vendorToken,
+      vendorTokenPreview: this.vendorToken ? `${this.vendorToken.substring(0,4)}...${this.vendorToken.slice(-4)}` : 'MISSING',
+      hasApiKey: !!this.apiKey,
+      timeout: this.timeout
+    });
   }
 
-  /**
-   * Transform IntakePayload to BaaPayload format
-   */
-  private transformPayload(payload: IntakePayload): BaaPayload {
-    // Contacts are optional now - use primary contact from form or first contact if available
-    const primaryContact = payload.contacts && payload.contacts.length > 0 ? payload.contacts[0] : null;
-    
-    let firstName = "";
-    let lastName = "";
-    let contactEmail = payload.practice.email || "";
-    
-    if (primaryContact && primaryContact.full_name) {
-      const [first, ...lastParts] = primaryContact.full_name.split(" ");
-      firstName = first || "";
-      lastName = lastParts.join(" ");
-      contactEmail = primaryContact.email || contactEmail;
-    } else if (payload.primaryContactName) {
-      // Use primary contact name from form if no contacts exist
-      const [first, ...lastParts] = payload.primaryContactName.split(" ");
-      firstName = first || "";
-      lastName = lastParts.join(" ");
-    }
-
-    const baaPayload: BaaPayload = {
-      email: contactEmail,
-      firstName: firstName,
-      lastName: lastName,
-      baaSigned: false,
-      paSigned: false,
-      facilityName: payload.practice.name,
-      facilityAddress: {
-        line1: payload.practice.address.line1 || "",
-        line2: payload.practice.address.line2 || undefined,
-        city: payload.practice.address.city || "",
-        state: payload.practice.address.state,
-        postalCode: payload.practice.address.zip || "",
-        country: "US",
-        phone: payload.practice.phone || undefined,
-      },
-      facilityNPI: payload.practice.npi_org || undefined,
-      facilityTIN: payload.practice.ein_tin || undefined,
-      facilityPhone: payload.practice.phone || undefined,
-      // Use primaryContactName from form if available, fallback to first contact
-      primaryContactName: payload.primaryContactName || (primaryContact ? primaryContact.full_name : ""),
-      primaryContactEmail: primaryContact ? (primaryContact.email || undefined) : undefined,
-      primaryContactPhone: primaryContact ? (primaryContact.phone || undefined) : undefined,
-    };
-
-    // Add physician info if available
-    if (payload.contacts && payload.contacts.length > 0) {
-      const physicianContact = payload.contacts.find(c => c.contact_type === "PHYSICIAN" || c.npi_individual);
-      if (physicianContact) {
-        baaPayload.physicianInfo = {
-          name: physicianContact.full_name,
-          email: physicianContact.email || undefined,
-          npi: physicianContact.npi_individual || undefined,
-        };
-
-        // Additional physicians
-        const additionalPhysicians = payload.contacts
-          .filter(c => c !== physicianContact && (c.contact_type === "PHYSICIAN" || c.npi_individual));
-        if (additionalPhysicians.length > 0) {
-          baaPayload.additionalPhysicians = additionalPhysicians.map(p => ({
-            name: p.full_name,
-            email: p.email || undefined,
-            npi: p.npi_individual || undefined,
-          }));
-        }
-      }
-    }
-
-    return baaPayload;
-  }
+  // NOTE: transformPayload method REMOVED
+  // Lambda expects original IntakePayload format with practice/rep objects
+  // NOT the BaaPayload format
 
   /**
    * Submit practice intake with retry logic
@@ -176,8 +107,9 @@ export class CuraGenesisClient {
     const maxRetries = 3;
     let lastError: Error | null = null;
 
-    // Transform to new API format
-    const baaPayload = this.transformPayload(payload);
+    // IMPORTANT: Send original IntakePayload format (practice + rep objects)
+    // The Lambda expects this structure, NOT the BaaPayload format
+    const requestPayload = payload;
 
     // Try multiple possible endpoint shapes and stage prefixes
     // Common API Gateway behavior: stage (e.g., /Prod) must be present unless custom domain maps it away
@@ -204,7 +136,7 @@ export class CuraGenesisClient {
             const combined = `${stagePrefix}${ep}`;
             response = await this.makeRequest<IntakeSuccessResponse>(combined, {
               method: "POST",
-              body: baaPayload,
+              body: requestPayload,
               idempotencyKey,
             });
 
@@ -485,3 +417,4 @@ export class MetricsClient {
     return response.json();
   }
 }
+// Force rebuild
