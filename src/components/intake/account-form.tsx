@@ -111,8 +111,8 @@ export function AccountForm({ accountId, onClose }: { accountId: string | null; 
   };
 
   const handleEinTinChange = (value: string) => {
-    // Keep raw digits for display, use empty string instead of null
-    const digits = value.replace(/\D/g, "");
+    // Keep raw digits for display, limit to 9 digits, use empty string instead of null
+    const digits = value.replace(/\D/g, "").slice(0, 9);
     setAccount(prev => ({
       ...prev,
       einTin: digits || "", // Use empty string, not null

@@ -138,8 +138,23 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
+    // Sanitize input before validation
+    const sanitized = {
+      ...body,
+      // Auto-fix website URL
+      website: body.website ? (
+        body.website.startsWith('http://') || body.website.startsWith('https://')
+          ? body.website
+          : `https://${body.website}`
+      ) : null,
+      // Ensure NPI is exactly 10 digits
+      npiOrg: body.npiOrg ? body.npiOrg.replace(/\D/g, '').slice(0, 10) : null,
+      // Ensure EIN/TIN is exactly 9 digits
+      einTin: body.einTin ? body.einTin.replace(/\D/g, '').slice(0, 9) : null,
+    };
+    
     // Validate input
-    const validatedData = AccountSchema.parse(body);
+    const validatedData = AccountSchema.parse(sanitized);
 
     // Create account
     const account = await prisma.account.create({
