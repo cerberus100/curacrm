@@ -140,6 +140,16 @@ export function LoginForm() {
                 className="h-11 bg-[#0B1A22] border-[#1A2F3E] text-white placeholder:text-gray-500 focus:border-[#0E9FB7] focus:ring-1 focus:ring-[#0E9FB7] transition-colors"
               />
             </div>
+            
+            {/* Forgot Password Link */}
+            <div className="text-right">
+              <a 
+                href="/auth/forgot-password"
+                className="text-sm text-[#0E9FB7] hover:text-[#0CC5E0] transition-colors"
+              >
+                Forgot Password?
+              </a>
+            </div>
 
             {/* Remember Me */}
             <div className="flex items-center gap-2">
