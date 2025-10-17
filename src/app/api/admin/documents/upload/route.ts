@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     const title = formData.get("title") as string;
     const type = formData.get("type") as string;
     const description = formData.get("description") as string | null;
+    const shareWithAllReps = formData.get("shareWithAllReps") === "true";
 
     if (!file) {
       return NextResponse.json(
@@ -80,9 +81,30 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // If shareWithAllReps, create recipients for all AGENT users
+    if (shareWithAllReps) {
+      const allReps = await db.user.findMany({
+        where: { role: Role.AGENT, active: true },
+        select: { id: true },
+      });
+
+      if (allReps.length > 0) {
+        await db.documentRecipient.createMany({
+          data: allReps.map(rep => ({
+            id: randomUUID(),
+            documentId: document.id,
+            repId: rep.id,
+            sentAt: new Date(),
+            status: "SENT",
+          })),
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       document,
+      recipientsCreated: shareWithAllReps ? (await db.user.count({ where: { role: Role.AGENT, active: true }})) : 0,
     });
   } catch (error: any) {
     console.error("Document upload error:", error);

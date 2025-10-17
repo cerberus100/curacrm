@@ -89,6 +89,7 @@ export function DocumentUploadAdmin() {
       formData.append('title', title);
       formData.append('type', type);
       if (description) formData.append('description', description);
+      formData.append('shareWithAllReps', selectAll.toString());
 
       const uploadResponse = await fetch("/api/admin/documents/upload", {
         method: "POST",
