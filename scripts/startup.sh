@@ -1,9 +1,9 @@
 #!/bin/bash
 
-echo "🚀 Starting CuraGenesis CRM..."
+echo "Starting CuraGenesis CRM..."
 
 # Run critical schema updates
-echo "📊 Running schema updates..."
+echo "[SCHEMA] Running schema updates..."
 node -e "
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
@@ -52,18 +52,18 @@ async function runMigrations() {
     await prisma.\$executeRawUnsafe('CREATE INDEX IF NOT EXISTS onboarding_tokens_token_idx ON onboarding_tokens(token)');
     await prisma.\$executeRawUnsafe('CREATE INDEX IF NOT EXISTS onboarding_tokens_user_idx ON onboarding_tokens(user_id)');
 
-    console.log('✅ Schema updates complete');
+    console.log('[OK] Schema updates complete');
   } catch (error) {
-    console.log('⚠️  Schema update error:', error.message);
+    console.log('[WARN]  Schema update error:', error.message);
   } finally {
     await prisma.\$disconnect();
   }
 }
 runMigrations();
-" || echo "⚠️  Schema updates skipped"
+" || echo "[WARN]  Schema updates skipped"
 
 # Seed admin user (skip if password column doesn't exist)
-echo "🌱 Ensuring admin user exists..."
+echo "[ADMIN] Ensuring admin user exists..."
 node -e "
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
@@ -95,7 +95,7 @@ async function ensureAdmin() {
     });
 
     if (existing) {
-      console.log('✅ Admin user exists');
+      console.log('[OK] Admin user exists');
       // Try to update password if column exists
       const hashedPassword = await hashPassword(password);
       await prisma.user.update({
@@ -107,7 +107,7 @@ async function ensureAdmin() {
           onboardStatus: 'ACTIVE',
         }
       }).catch(() => {
-        console.log('⚠️  Password column not found - please run: ALTER TABLE users ADD COLUMN password VARCHAR(255);');
+        console.log('[WARN]  Password column not found - please run: ALTER TABLE users ADD COLUMN password VARCHAR(255);');
       });
     } else {
       console.log('Creating new admin user...');
@@ -124,7 +124,7 @@ async function ensureAdmin() {
         }
       }).catch(async () => {
         // If password column doesn't exist, create without it
-        console.log('⚠️  Password column not found, creating user without password');
+        console.log('[WARN]  Password column not found, creating user without password');
         await prisma.user.create({
           data: {
             email,
@@ -136,22 +136,22 @@ async function ensureAdmin() {
           }
         });
       });
-      console.log('✅ Admin user created!');
+      console.log('[OK] Admin user created!');
     }
     
-    console.log('📧 Admin Email: admin@curagenesis.com');
-    console.log('🔑 Admin Password: Money100!');
+    console.log('Email: Admin Email: admin@curagenesis.com');
+    console.log('Password: Admin Password: Money100!');
   } catch (error) {
-    console.log('⚠️  Admin setup error:', error.message || error);
+    console.log('[WARN]  Admin setup error:', error.message || error);
   } finally {
     await prisma.\$disconnect();
   }
 }
 
 ensureAdmin();
-" || echo "⚠️  Admin user creation skipped"
+" || echo "[WARN]  Admin user creation skipped"
 
-echo "✅ Initialization complete!"
+echo "[OK] Initialization complete!"
 
 # Create activity_log table if it doesn't exist
 echo "Creating activity_log table if it doesn't exist..."
@@ -177,5 +177,5 @@ CREATE INDEX IF NOT EXISTS idx_activity_log_entity ON activity_log("entityType",
 EOF
 
 # Start the Next.js application using the standalone server
-echo "🌐 Starting Next.js server..."
+echo "[SERVER] Starting Next.js server..."
 exec node server.js
