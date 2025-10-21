@@ -5,13 +5,11 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand, ScanCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 
-// Initialize DynamoDB client
+// Initialize DynamoDB client - uses IAM role in production
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION || "us-east-2",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
-  },
+  // In ECS, this will use the task IAM role automatically
+  // No need to specify credentials
 });
 
 // Document client for easier JSON handling
